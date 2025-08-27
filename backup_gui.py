@@ -5,13 +5,50 @@ Main application for configuring and managing backup profiles.
 """
 
 import sys
+import argparse
 import traceback
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from gui.main_window import MainWindow
 
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Concrete Backup - GUI application for managing backup profiles"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="Concrete Backup 1.0.0"
+    )
+    parser.add_argument(
+        "--headless-test",
+        action="store_true",
+        help="Test that the application can be imported (for CI/CD)"
+    )
+    return parser.parse_args()
+
+
 def main():
     """Main application entry point."""
+    # Parse command line arguments first
+    args = parse_arguments()
+    
+    # Handle headless test mode (for CI/CD)
+    if args.headless_test:
+        print("Headless test mode: checking imports...")
+        try:
+            # Test imports without creating GUI
+            from gui.main_window import MainWindow
+            print("✓ All GUI imports successful")
+            return 0
+        except ImportError as e:
+            print(f"✗ Import error: {e}")
+            return 1
+        except Exception as e:
+            print(f"✗ Unexpected error: {e}")
+            return 1
+
     print("Starting Concrete Backup GUI...")
 
     # Create application

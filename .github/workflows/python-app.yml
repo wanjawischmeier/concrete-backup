@@ -109,8 +109,24 @@ jobs:
 
     - name: Test executable
       run: |
-        export QT_QPA_PLATFORM=offscreen
-        ./dist/concrete-backup --help || echo "Executable created successfully"
+        # Test that the executable was created and is executable
+        if [ -f "dist/concrete-backup" ] && [ -x "dist/concrete-backup" ]; then
+          echo "✓ Executable created successfully and is executable"
+          ls -la dist/concrete-backup
+          
+          # Test basic command line options
+          echo "Testing --help option..."
+          ./dist/concrete-backup --help
+          
+          echo "Testing --version option..."
+          ./dist/concrete-backup --version
+          
+          echo "Testing --headless-test option..."
+          ./dist/concrete-backup --headless-test
+        else
+          echo "✗ Executable not found or not executable"
+          exit 1
+        fi
 
     - name: Upload executable artifact
       uses: actions/upload-artifact@v4
