@@ -172,46 +172,58 @@ jobs:
     needs: [test, check-release]
     # Build if: 1) this is triggered by source file changes, OR 2) we need a new release
     if: github.event_name != 'push' || needs.check-release.outputs.needs-release == 'true'
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            platform: linux/amd64
-            pyinstaller_arch: x86_64
-          - arch: arm64
-            platform: linux/arm64
-            pyinstaller_arch: aarch64
     outputs:
       version: ${{ needs.check-release.outputs.version }}
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up QEMU for cross-platform builds
-      uses: docker/setup-qemu-action@v3
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        platforms: ${{ matrix.platform }}
+        python-version: '3.11'
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
 
-    - name: Build in Docker container
+    - name: Install dependencies
+      run: poetry install --no-interaction
+
+    - name: Create version constant file
       run: |
-        docker buildx create --use
-        docker buildx build --platform ${{ matrix.platform }} \
-          --build-arg VERSION=${{ needs.check-release.outputs.version }} \
-          --build-arg ARCH=${{ matrix.arch }} \
-          --output type=local,dest=./dist \
-          -f .github/docker/Dockerfile.build .
+        VERSION=${{ needs.check-release.outputs.version }}
+        echo "CONCRETE_BACKUP_VERSION = \"${VERSION}\"" > version_const.py
+        echo "Created version_const.py with version: ${VERSION}"
+
+    - name: Build with PyInstaller
+      run: |
+        poetry run pyinstaller \
+          --onefile \
+          --name concrete-backup-bin \
+          --hidden-import=PyQt5.QtCore \
+          --hidden-import=PyQt5.QtGui \
+          --hidden-import=PyQt5.QtWidgets \
+          --add-data="icon.png:." \
+          backup_gui.py
+
+    - name: Make scripts executable
+      run: chmod +x .github/scripts/*.sh
+
+    - name: Create Debian package structure
+      run: .github/scripts/create-deb-structure.sh "${{ needs.check-release.outputs.version }}" debian-package
+
+    - name: Build Debian package
+      run: .github/scripts/build-deb-package.sh "${{ needs.check-release.outputs.version }}"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: concrete-backup-${{ needs.check-release.outputs.version }}-${{ matrix.arch }}
-        path: |
-          dist/*.deb
-          dist/*.rpm
-          dist/*.tar.gz
+        name: concrete-backup-${{ needs.check-release.outputs.version }}-deb
+        path: concrete-backup_${{ needs.check-release.outputs.version }}-1_amd64.deb
         retention-days: 30
 
   release:
@@ -228,14 +240,13 @@ jobs:
     - name: Download all build artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: concrete-backup-${{ needs.check-release.outputs.version }}-*
+        name: concrete-backup-${{ needs.check-release.outputs.version }}-deb
         path: artifacts/
-        merge-multiple: true
 
     - name: List downloaded artifacts
       run: |
         echo "Downloaded artifacts:"
-        find artifacts/ -type f -name "*.deb" -o -name "*.rpm" -o -name "*.tar.gz" | sort
+        find artifacts/ -type f -name "*.deb" | sort
 
     - name: Create release archive
       run: .github/scripts/create-release-archive.sh "${{ needs.check-release.outputs.version }}"

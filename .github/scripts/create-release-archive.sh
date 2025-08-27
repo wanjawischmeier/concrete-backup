@@ -13,20 +13,12 @@ fi
 # Create release files directory
 mkdir -p release-files
 
-# Copy all package formats if they exist
+# Copy Debian package
 if find artifacts/ -name "*.deb" -type f | head -1 > /dev/null 2>&1; then
-    echo "Copying Debian packages..."
+    echo "Copying Debian package..."
     cp artifacts/*.deb release-files/
-fi
-
-if find artifacts/ -name "*.rpm" -type f | head -1 > /dev/null 2>&1; then
-    echo "Copying RPM packages..."
-    cp artifacts/*.rpm release-files/
-fi
-
-if find artifacts/ -name "*.tar.gz" -type f | head -1 > /dev/null 2>&1; then
-    echo "Copying source archives..."
-    cp artifacts/*.tar.gz release-files/
+else
+    echo "Warning: No Debian package found in artifacts/"
 fi
 
 echo "Release archive created in release-files/"
