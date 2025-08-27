@@ -9,17 +9,19 @@ import argparse
 import traceback
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from gui.main_window import MainWindow
+from version import get_version
 
 
 def parse_arguments():
     """Parse command line arguments."""
+    version = get_version()
     parser = argparse.ArgumentParser(
         description="Concrete Backup - GUI application for managing backup profiles"
     )
     parser.add_argument(
         "--version",
         action="version",
-        version="Concrete Backup 1.0.0"
+        version=f"Concrete Backup {version}"
     )
     parser.add_argument(
         "--headless-test",
@@ -38,8 +40,7 @@ def main():
     if args.headless_test:
         print("Headless test mode: checking imports...")
         try:
-            # Test imports without creating GUI
-            from gui.main_window import MainWindow
+            # Test imports without creating GUI - MainWindow is already imported above
             print("✓ All GUI imports successful")
             return 0
         except ImportError as e:
