@@ -34,7 +34,7 @@ jobs:
     
     - name: Load cached venv
       id: cached-poetry-dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
@@ -113,7 +113,7 @@ jobs:
         ./dist/concrete-backup --help || echo "Executable created successfully"
     
     - name: Upload executable artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: concrete-backup-linux
         path: dist/concrete-backup
@@ -129,7 +129,7 @@ jobs:
         chmod +x concrete-backup-bundle/run_backup_gui.sh
     
     - name: Upload application bundle
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: concrete-backup-bundle-linux
         path: concrete-backup-bundle/
