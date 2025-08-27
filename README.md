@@ -76,4 +76,4 @@ concrete-backup/
 - psutil: System information
 
 ## Credit
-Icon: <a href="https://www.flaticon.com/free-icons/firewall" title="firewall icons">Firewall icons created by juicy_fish - Flaticon</a>
+App icon created by (juicy_fish - Flaticon)[https://www.flaticon.com/free-icons/firewall]

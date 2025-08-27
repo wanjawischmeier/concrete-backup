@@ -70,7 +70,9 @@ class MainWindow(QMainWindow):
         version_info = get_version_info()
         QMessageBox.about(self, "About Concrete Backup",
                           f"{version_info['full_name']}\n\n"
-                          "A comprehensive backup management system for Ubuntu.")
+                          "A comprehensive backup management system for Ubuntu.\n\n"
+                          "App icon created by juicy_fish - Flaticon\n"
+                          "https://www.flaticon.com/free-icons/firewall")
 
     def closeEvent(self, event):
         """Handle window close event - check for unsaved changes."""
