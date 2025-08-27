@@ -6,15 +6,14 @@ Handles the actual backup execution, drive mounting, and logging.
 
 import os
 import sys
-import shutil
 import subprocess
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-import json
+from typing import List, Tuple
 
-from backup_config import BackupConfigManager, BackupProfile, BackupDestination
+from backup_config import BackupConfigManager, BackupDestination
+from drive_manager import DriveManager
 
 
 class BackupEngine:
@@ -33,6 +32,7 @@ class BackupEngine:
         
         self.logger = None
         self.mounted_drives = []  # Track what we mounted
+        self.drive_manager = DriveManager()  # For drive operations
         
     def setup_logging(self, destination_path: str) -> logging.Logger:
         """Setup logging for a specific destination."""
@@ -68,63 +68,24 @@ class BackupEngine:
         
         return logger
     
-    def mount_drive(self, destination: BackupDestination) -> Tuple[bool, str]:
-        """Mount a drive if needed."""
+    def mount_drive(self, destination: BackupDestination) -> tuple[bool, str]:
+        """Mount a drive if needed using DriveManager."""
         if not destination.auto_mount:
             return True, "Auto-mount disabled"
         
-        try:
-            # Check if already mounted
-            result = subprocess.run(['findmnt', destination.mount_point], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                return True, f"Already mounted at {destination.mount_point}"
-            
-            # Create mount point
-            os.makedirs(destination.mount_point, exist_ok=True)
-            
-            # Try udisksctl first
-            result = subprocess.run([
-                'udisksctl', 'mount', '-b', destination.drive_device
-            ], capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                self.mounted_drives.append(destination.drive_device)
-                return True, f"Mounted {destination.drive_device}"
-            else:
-                # Fallback to sudo mount
-                result = subprocess.run([
-                    'sudo', 'mount', destination.drive_device, destination.mount_point
-                ], capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    self.mounted_drives.append(destination.drive_device)
-                    return True, f"Mounted {destination.drive_device} at {destination.mount_point}"
-                else:
-                    return False, f"Failed to mount: {result.stderr}"
+        success, message = self.drive_manager.mount_drive(
+            destination.drive_device, 
+            destination.mount_point
+        )
         
-        except Exception as e:
-            return False, f"Error mounting drive: {str(e)}"
+        if success:
+            self.mounted_drives.append(destination.drive_device)
+        
+        return success, message
     
     def unmount_drive(self, drive_device: str) -> bool:
-        """Unmount a drive."""
-        try:
-            # Try udisksctl first
-            result = subprocess.run([
-                'udisksctl', 'unmount', '-b', drive_device
-            ], capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                return True
-            else:
-                # Fallback to sudo umount
-                result = subprocess.run([
-                    'sudo', 'umount', drive_device
-                ], capture_output=True, text=True)
-                return result.returncode == 0
-        
-        except Exception:
-            return False
+        """Unmount a drive using DriveManager."""
+        return self.drive_manager.unmount_drive(drive_device)
     
     def run_custom_commands(self, commands: List, phase: str, logger: logging.Logger) -> bool:
         """Run custom commands (pre or post backup)."""
@@ -159,7 +120,7 @@ class BackupEngine:
             except subprocess.TimeoutExpired:
                 logger.error(f"Command timed out after {cmd.timeout} seconds")
                 return False
-            except Exception as e:
+            except (OSError, subprocess.SubprocessError, PermissionError) as e:
                 logger.error(f"Error running command: {str(e)}")
                 return False
         
@@ -217,12 +178,12 @@ class BackupEngine:
                 logger.error(f"Error: {result.stderr}")
                 return False
                 
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, PermissionError, FileNotFoundError) as e:
             logger.error(f"Error syncing {source}: {str(e)}")
             return False
     
     def run_backup(self) -> bool:
-        """Execute the complete backup process."""
+        """Execute the complete backup process for all destinations."""
         success = True
         
         # Validate profile
@@ -235,7 +196,7 @@ class BackupEngine:
         
         print(f"Starting backup for profile: {self.profile.name}")
         
-        # Process each destination
+        # Process each destination using the single-destination method
         for dest_idx, destination in enumerate(self.profile.destinations):
             if not destination.enabled:
                 print(f"Skipping disabled destination {dest_idx + 1}")
@@ -243,62 +204,13 @@ class BackupEngine:
             
             print(f"\nProcessing destination {dest_idx + 1}: {destination.target_path}")
             
-            # Mount drive if needed
-            mount_success, mount_msg = self.mount_drive(destination)
-            if not mount_success:
-                print(f"Failed to mount drive: {mount_msg}")
-                success = False
-                continue
+            # Use the single-destination backup method
+            dest_success, message = self.run_backup_to_destination(destination)
             
-            print(f"Mount status: {mount_msg}")
-            
-            # Ensure target directory exists
-            try:
-                os.makedirs(destination.target_path, exist_ok=True)
-            except Exception as e:
-                print(f"Failed to create target directory: {e}")
-                success = False
-                continue
-            
-            # Setup logging for this destination
-            logger = self.setup_logging(destination.target_path)
-            logger.info(f"Starting backup to {destination.target_path}")
-            logger.info(f"Profile: {self.profile.name}")
-            logger.info(f"Sources: {len(self.profile.sources)} directories")
-            
-            try:
-                # Run pre-backup commands
-                if not self.run_custom_commands(self.profile.pre_commands, "pre-backup", logger):
-                    logger.error("Pre-backup commands failed, skipping this destination")
-                    success = False
-                    continue
-                
-                # Backup each source
-                sources_success = True
-                for source_idx, source in enumerate(self.profile.sources):
-                    if not source.enabled:
-                        logger.info(f"Skipping disabled source: {source.path}")
-                        continue
-                    
-                    if not self.sync_directory(source.path, destination.target_path, logger):
-                        sources_success = False
-                        success = False
-                
-                # Run post-backup commands only if sources succeeded
-                if sources_success:
-                    if not self.run_custom_commands(self.profile.post_commands, "post-backup", logger):
-                        logger.error("Post-backup commands failed")
-                        success = False
-                else:
-                    logger.error("Skipping post-backup commands due to source sync failures")
-                
-                if sources_success:
-                    logger.info("Backup completed successfully for this destination")
-                else:
-                    logger.error("Backup completed with errors for this destination")
-            
-            except Exception as e:
-                logger.error(f"Unexpected error during backup: {str(e)}")
+            if dest_success:
+                print(f"✓ {message}")
+            else:
+                print(f"✗ {message}")
                 success = False
         
         # Cleanup: unmount drives we mounted
@@ -329,14 +241,14 @@ class BackupEngine:
             
             # Mount drive if needed
             if destination.auto_mount and destination.drive_device:
-                mount_success, mount_msg = self.mount_drive(destination.drive_device, destination.mount_point)
+                mount_success, mount_msg = self.mount_drive(destination)
                 if not mount_success:
                     return False, f"Failed to mount drive: {mount_msg}"
             
             # Ensure target directory exists
             try:
                 os.makedirs(destination.target_path, exist_ok=True)
-            except Exception as e:
+            except (OSError, PermissionError) as e:
                 return False, f"Failed to create target directory: {str(e)}"
             
             # Setup logging for this destination
@@ -375,10 +287,16 @@ class BackupEngine:
                 logger.error(f"Backup failed for sources: {', '.join(failed_sources)}")
                 return False, f"Failed to backup sources: {', '.join(failed_sources)}"
                 
+        except (OSError, subprocess.SubprocessError, PermissionError, KeyboardInterrupt) as e:
+            error_msg = f"Unexpected error during backup: {str(e)}"
+            if hasattr(self, 'logger') and self.logger:
+                self.logger.error(error_msg)
+            return False, error_msg
         except Exception as e:
             error_msg = f"Unexpected error during backup: {str(e)}"
             if hasattr(self, 'logger') and self.logger:
                 self.logger.error(error_msg)
+                self.logger.exception("Full traceback:")
             return False, error_msg
 
 
@@ -401,8 +319,16 @@ def main():
             print("\nBackup completed with errors!")
             sys.exit(1)
     
-    except Exception as e:
+    except (ValueError, OSError, PermissionError) as e:
         print(f"Fatal error: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nBackup interrupted by user")
+        sys.exit(130)
+    except Exception as e:
+        print(f"Unexpected fatal error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 

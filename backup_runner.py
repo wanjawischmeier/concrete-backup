@@ -29,5 +29,11 @@ class BackupRunner(QThread):
             else:
                 self.finished.emit(False, "Backup completed with errors")
         
-        except Exception as e:
+        except (ValueError, OSError, PermissionError) as e:
             self.finished.emit(False, f"Backup failed: {str(e)}")
+        except KeyboardInterrupt:
+            self.finished.emit(False, "Backup was interrupted")
+        except Exception as e:
+            self.finished.emit(False, f"Unexpected backup error: {str(e)}")
+            import traceback
+            traceback.print_exc()

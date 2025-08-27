@@ -4,7 +4,7 @@ GUI utilities for password prompts and system operations
 """
 
 import subprocess
-from typing import Tuple, Optional
+from typing import Tuple
 from PyQt5.QtWidgets import QInputDialog, QLineEdit, QMessageBox, QWidget
 
 
@@ -97,7 +97,7 @@ class SudoHelper:
             
             return False, "Maximum password attempts exceeded"
                 
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, PermissionError) as e:
             return False, f"Error running sudo command: {str(e)}"
     
     @staticmethod

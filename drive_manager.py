@@ -7,8 +7,7 @@ Handles drive detection for backup configuration (simplified version).
 import os
 import subprocess
 import json
-from typing import List, Dict, Optional
-import psutil
+from typing import List, Dict
 
 
 class DriveInfo:
@@ -89,3 +88,56 @@ class DriveManager:
             # Process children (partitions)
             if 'children' in device:
                 self._parse_lsblk_output(device['children'], device_name)
+    
+    def mount_drive(self, drive_device: str, mount_point: str) -> tuple[bool, str]:
+        """Mount a drive to the specified mount point."""
+        try:
+            # Check if already mounted
+            result = subprocess.run(['findmnt', mount_point], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                return True, f"Already mounted at {mount_point}"
+            
+            # Create mount point
+            os.makedirs(mount_point, exist_ok=True)
+            
+            # Try udisksctl first
+            result = subprocess.run([
+                'udisksctl', 'mount', '-b', drive_device
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return True, f"Mounted {drive_device}"
+            else:
+                # Fallback to sudo mount
+                result = subprocess.run([
+                    'sudo', 'mount', drive_device, mount_point
+                ], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    return True, f"Mounted {drive_device} at {mount_point}"
+                else:
+                    return False, f"Failed to mount: {result.stderr}"
+        
+        except (OSError, subprocess.SubprocessError, PermissionError) as e:
+            return False, f"Error mounting drive: {str(e)}"
+    
+    def unmount_drive(self, drive_device: str) -> bool:
+        """Unmount a drive."""
+        try:
+            # Try udisksctl first
+            result = subprocess.run([
+                'udisksctl', 'unmount', '-b', drive_device
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return True
+            else:
+                # Fallback to sudo umount
+                result = subprocess.run([
+                    'sudo', 'umount', drive_device
+                ], capture_output=True, text=True)
+                return result.returncode == 0
+        
+        except (OSError, subprocess.SubprocessError, PermissionError):
+            return False

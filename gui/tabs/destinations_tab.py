@@ -4,13 +4,13 @@ Destinations Tab for selecting backup destinations with drive-specific functiona
 """
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton,
-    QFileDialog, QMessageBox
+    QWidget, QVBoxLayout, QMessageBox
 )
-from PyQt5.QtCore import Qt
 
 from backup_config import BackupProfile, BackupDestination
-from .widgets import DriveSelectionWidget, DirectoryListWidget
+from gui.widgets.drive_selection_widget import DriveSelectionWidget
+from gui.widgets.directory_list_widget import DirectoryListWidget  
+from gui.widgets.directory_picker import EnhancedDirectoryPicker
 from drive_manager import DriveManager
 
 
@@ -59,8 +59,9 @@ class DestinationsTab(QWidget):
         else:
             base_path = "/"
         
-        directory = QFileDialog.getExistingDirectory(
-            self, "Select Destination Directory", base_path
+        directory = EnhancedDirectoryPicker.get_directory(
+            self, "Select Destination Directory", base_path,
+            require_drive_selection=True, selected_drive=drive
         )
         
         if directory:

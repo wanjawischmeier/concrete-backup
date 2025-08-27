@@ -5,13 +5,13 @@ Sources Tab for selecting source directories with drive-specific functionality
 
 from typing import Optional
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QCheckBox, QGroupBox, QFileDialog, QMessageBox
+    QWidget, QVBoxLayout, QMessageBox
 )
-from PyQt5.QtCore import Qt
 
 from backup_config import BackupProfile, BackupSource
-from .widgets import DriveSelectionWidget, DirectoryListWidget
+from gui.widgets.drive_selection_widget import DriveSelectionWidget
+from gui.widgets.directory_list_widget import DirectoryListWidget  
+from gui.widgets.directory_picker import EnhancedDirectoryPicker
 from drive_manager import DriveManager
 
 
@@ -60,8 +60,9 @@ class SourcesTab(QWidget):
         else:
             base_path = "/"
         
-        directory = QFileDialog.getExistingDirectory(
-            self, "Select Source Directory", base_path
+        directory = EnhancedDirectoryPicker.get_directory(
+            self, "Select Source Directory", base_path,
+            require_drive_selection=True, selected_drive=drive
         )
         
         if directory:

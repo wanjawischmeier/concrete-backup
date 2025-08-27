@@ -3,11 +3,9 @@
 Main Window for Concrete Backup GUI
 """
 
-import sys
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
-from PyQt5.QtCore import Qt
 
-from gui.backup_config_widget import BackupConfigWidget
+from gui.backup_config_view import BackupConfigView
 
 
 class MainWindow(QMainWindow):
@@ -19,7 +17,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 1000, 700)
         
         # Central widget
-        self.backup_config = BackupConfigWidget()
+        self.backup_config = BackupConfigView()
         self.setCentralWidget(self.backup_config)
         
         # Create menu bar

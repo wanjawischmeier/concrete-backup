@@ -5,7 +5,6 @@ Main application for configuring and managing backup profiles.
 """
 
 import sys
-import os
 import traceback
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from gui.main_window import MainWindow
@@ -34,14 +33,23 @@ def main():
         print(f"Application exited with code: {exit_code}")
         sys.exit(exit_code)
         
+    except ImportError as e:
+        print(f"Missing dependency: {e}")
+        sys.exit(1)
+    except (OSError, PermissionError) as e:
+        print(f"System error starting GUI: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nGUI startup interrupted by user")
+        sys.exit(130)
     except Exception as e:
-        print(f"Error starting GUI: {e}")
+        print(f"Unexpected error starting GUI: {e}")
         traceback.print_exc()
         
         # Show error dialog if possible
         try:
             QMessageBox.critical(None, "Startup Error", f"Failed to start GUI: {str(e)}")
-        except:
+        except Exception:
             pass
         
         sys.exit(1)

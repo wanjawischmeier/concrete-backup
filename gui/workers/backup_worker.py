@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Backup Worker for running backups in separate thread
+Backup Worker for running backups in separate thread.
 """
 
 from PyQt5.QtCore import QThread, pyqtSignal

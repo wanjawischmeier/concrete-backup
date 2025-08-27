@@ -18,10 +18,9 @@ class BackupSource:
     path: str
     enabled: bool = True
     
-    def __post_init__(self):
-        """Validate the source path exists."""
-        if not os.path.exists(self.path):
-            raise ValueError(f"Source path does not exist: {self.path}")
+    def is_valid(self) -> bool:
+        """Check if the source path exists."""
+        return os.path.exists(self.path)
 
 
 @dataclass
@@ -146,7 +145,7 @@ class BackupConfigManager:
             
             return True
             
-        except Exception as e:
+        except (OSError, PermissionError, yaml.YAMLError, json.JSONEncodeError) as e:
             print(f"Error saving profile: {e}")
             return False
     
@@ -169,7 +168,7 @@ class BackupConfigManager:
             
             return None
             
-        except Exception as e:
+        except (OSError, PermissionError, FileNotFoundError, yaml.YAMLError, json.JSONDecodeError) as e:
             print(f"Error loading profile: {e}")
             return None
     
@@ -197,7 +196,7 @@ class BackupConfigManager:
                     return True
             return False
             
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             print(f"Error deleting profile: {e}")
             return False
     
@@ -218,7 +217,7 @@ class BackupConfigManager:
         for i, source in enumerate(profile.sources):
             if not source.path:
                 errors.append(f"Source {i+1}: Path is required")
-            elif not os.path.exists(source.path):
+            elif not source.is_valid():
                 errors.append(f"Source {i+1}: Path does not exist: {source.path}")
         
         # Validate destinations

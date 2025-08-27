@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 
 from backup_config import BackupProfile
-from .widgets import CommandListWidget
+from gui.widgets.command_list_widget import CommandListWidget
 
 
 class CustomCommandsTab(QWidget):

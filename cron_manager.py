@@ -7,7 +7,6 @@ Handles creating, updating, and removing cron jobs for backup schedules.
 import os
 import subprocess
 import tempfile
-import re
 from typing import List, Optional, Tuple
 from pathlib import Path
 
@@ -100,44 +99,31 @@ fi
         
         return str(script_path)
     
-    def get_current_crontab(self, use_root: bool = True) -> str:
-        """Get the current crontab (root or user)."""
+    def get_current_crontab(self) -> str:
+        """Get the current root crontab."""
         try:
-            if use_root:
-                # Import here to avoid circular imports
-                from gui.gui_utils import SudoHelper
-                success, output = SudoHelper.run_with_sudo(['crontab', '-l'], self.parent_widget)
-                return output if success else ""
+            result = subprocess.run(['crontab', '-l'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout
             else:
-                result = subprocess.run(['crontab', '-l'], 
-                                      capture_output=True, text=True)
-                if result.returncode == 0:
-                    return result.stdout
-                else:
-                    return ""  # No crontab exists
+                return ""  # No crontab exists
         except Exception:
             return ""
     
-    def set_crontab(self, content: str, use_root: bool = True) -> bool:
-        """Set the crontab content (root or user)."""
+    def set_crontab(self, content: str) -> bool:
+        """Set the root crontab content."""
         try:
             with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.cron') as f:
                 f.write(content)
                 temp_file = f.name
             
-            if use_root:
-                # Import here to avoid circular imports
-                from gui.gui_utils import SudoHelper
-                success, output = SudoHelper.run_with_sudo(['crontab', temp_file], self.parent_widget)
-                os.unlink(temp_file)
-                return success
-            else:
-                result = subprocess.run(['crontab', temp_file], 
-                                      capture_output=True, text=True)
-                os.unlink(temp_file)
-                return result.returncode == 0
+            result = subprocess.run(['crontab', temp_file], 
+                                  capture_output=True, text=True)
+            os.unlink(temp_file)
+            return result.returncode == 0
         
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, PermissionError) as e:
             print(f"Error setting crontab: {e}")
             if 'temp_file' in locals():
                 try:
@@ -145,11 +131,10 @@ fi
                 except:
                     pass
             return False
-            return False
     
-    def remove_backup_jobs(self, use_root: bool = True) -> bool:
-        """Remove all concrete backup jobs from crontab."""
-        current_crontab = self.get_current_crontab(use_root)
+    def remove_backup_jobs(self) -> bool:
+        """Remove all concrete backup jobs from root crontab."""
+        current_crontab = self.get_current_crontab()
         
         # Split into lines
         lines = current_crontab.split('\n')
@@ -175,16 +160,16 @@ fi
         if new_content and not new_content.endswith('\n'):
             new_content += '\n'
         
-        return self.set_crontab(new_content, use_root)
+        return self.set_crontab(new_content)
     
-    def add_backup_job(self, profile: BackupProfile, use_root: bool = True) -> Tuple[bool, str]:
-        """Add a backup job to crontab."""
+    def add_backup_job(self, profile: BackupProfile) -> Tuple[bool, str]:
+        """Add a backup job to root crontab."""
         if not profile.schedule.enabled:
             return False, "Schedule is not enabled"
         
         try:
             # Remove existing backup jobs first
-            self.remove_backup_jobs(use_root)
+            self.remove_backup_jobs()
             
             # Create the backup script
             script_path = self.create_backup_script(profile.name)
@@ -193,7 +178,7 @@ fi
             cron_expr = self.generate_cron_expression(profile.schedule)
             
             # Get current crontab
-            current_crontab = self.get_current_crontab(use_root)
+            current_crontab = self.get_current_crontab()
             
             # Add the new job
             backup_job = f"{self.job_comment} - {profile.name}\n"
@@ -205,18 +190,17 @@ fi
             new_crontab += backup_job
             
             # Set the new crontab
-            if self.set_crontab(new_crontab, use_root):
-                cron_type = "root" if use_root else "user"
-                return True, f"Backup job scheduled in {cron_type} crontab: {cron_expr}"
+            if self.set_crontab(new_crontab):
+                return True, f"Backup job scheduled in root crontab: {cron_expr}"
             else:
                 return False, "Failed to update crontab"
         
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, PermissionError) as e:
             return False, f"Error adding backup job: {str(e)}"
     
-    def get_backup_job_status(self, use_root: bool = True) -> Optional[str]:
+    def get_backup_job_status(self) -> Optional[str]:
         """Get the current backup job status."""
-        current_crontab = self.get_current_crontab(use_root)
+        current_crontab = self.get_current_crontab()
         
         lines = current_crontab.split('\n')
         for i, line in enumerate(lines):
@@ -229,9 +213,9 @@ fi
         
         return None
     
-    def is_backup_scheduled(self, use_root: bool = True) -> bool:
+    def is_backup_scheduled(self) -> bool:
         """Check if a backup job is currently scheduled."""
-        return self.get_backup_job_status(use_root) is not None
+        return self.get_backup_job_status() is not None
     
     def validate_schedule(self, schedule: ScheduleConfig) -> List[str]:
         """Validate a schedule configuration."""
