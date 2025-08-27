@@ -17,23 +17,6 @@ pyyaml = "^6.0.2"
 flake8 = "^7.0.0"
 pyinstaller = "^6.0.0"
 
-[tool.flake8]
-exclude = [
-    ".venv",
-    ".git",
-    "__pycache__",
-    "*.egg-info",
-    ".pytest_cache",
-    "build",
-    "dist"
-]
-max-line-length = 127
-max-complexity = 10
-ignore = [
-    "E203",  # whitespace before ':'
-    "W503",  # line break before binary operator
-]
-
 
 [build-system]
 requires = ["poetry-core"]

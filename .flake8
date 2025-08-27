@@ -12,14 +12,14 @@ exclude =
 max-line-length = 127
 max-complexity = 10
 
+# Ignore specific error codes
 ignore = 
-    E203,  # whitespace before ':'
-    W503,  # line break before binary operator
+    E203,
+    W503
 
 # Only check project files
 filename = 
     *.py
 
 per-file-ignores =
-    # Allow unused imports in __init__.py files
     __init__.py:F401
