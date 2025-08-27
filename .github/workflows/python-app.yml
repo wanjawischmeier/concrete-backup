@@ -15,51 +15,51 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python 3.12
       id: setup-python
       uses: actions/setup-python@v4
       with:
         python-version: "3.12"
-    
+
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
         version: latest
         virtualenvs-create: true
         virtualenvs-in-project: true
-    
+
     - name: Load cached venv
       id: cached-poetry-dependencies
       uses: actions/cache@v4
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-    
+
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root --with dev
-    
+
     - name: Install project
       run: poetry install --no-interaction --with dev
-    
+
     - name: Lint with flake8
       run: |
         # Check for critical errors (syntax errors and undefined names)
         poetry run flake8 --select=E9,F63,F7,F82 --show-source --statistics
         # Full lint check with all configured rules
         poetry run flake8 --exit-zero --statistics
-    
+
     - name: Test syntax compilation
       run: |
         poetry run python -m py_compile backup_config.py
         poetry run python -m py_compile backup_engine.py
         poetry run python -c "import backup_config; print('backup_config imports successfully')"
         poetry run python -c "import backup_engine; print('backup_engine imports successfully')"
-    
+
     - name: Test GUI imports (headless)
       run: |
         # Test that GUI modules can be imported (without actually creating windows)
@@ -70,30 +70,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
       with:
         python-version: "3.12"
-    
+
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
         version: latest
         virtualenvs-create: true
         virtualenvs-in-project: true
-    
+
     - name: Install dependencies
       run: poetry install --no-interaction --with dev
-    
+
     - name: Install system dependencies for packaging
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential
-    
+
     - name: Build executable with PyInstaller
       run: |
         export QT_QPA_PLATFORM=offscreen
@@ -106,19 +106,19 @@ jobs:
           --add-data "gui:gui" \
           --name concrete-backup \
           backup_gui.py
-    
+
     - name: Test executable
       run: |
         export QT_QPA_PLATFORM=offscreen
         ./dist/concrete-backup --help || echo "Executable created successfully"
-    
+
     - name: Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
         name: concrete-backup-linux
         path: dist/concrete-backup
         retention-days: 30
-    
+
     - name: Create application bundle
       run: |
         mkdir -p concrete-backup-bundle
@@ -127,7 +127,7 @@ jobs:
         cp README.md concrete-backup-bundle/
         chmod +x concrete-backup-bundle/concrete-backup
         chmod +x concrete-backup-bundle/run_backup_gui.sh
-    
+
     - name: Upload application bundle
       uses: actions/upload-artifact@v4
       with:

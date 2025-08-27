@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 
 class EnhancedDirectoryPicker:
     """Simple directory picker that works with root privileges."""
-    
+
     @staticmethod
     def get_directory(parent: QWidget = None, 
                      caption: str = "Select Directory",
@@ -19,14 +19,14 @@ class EnhancedDirectoryPicker:
                      selected_drive = None) -> Optional[str]:
         """
         Get a directory path using the standard file dialog.
-        
+
         Args:
             parent: Parent widget
             caption: Dialog title
             base_path: Starting directory
             require_drive_selection: Whether to require a drive to be selected first
             selected_drive: The currently selected drive (if any)
-            
+
         Returns:
             Selected directory path or None if cancelled
         """
@@ -39,6 +39,6 @@ class EnhancedDirectoryPicker:
                 "Use the drive selection dropdown to choose a drive."
             )
             return None
-        
+
         # Use standard file dialog (works fine with root privileges)
         return QFileDialog.getExistingDirectory(parent, caption, base_path)

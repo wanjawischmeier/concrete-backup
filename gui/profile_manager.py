@@ -13,14 +13,14 @@ from backup_config import BackupConfigManager, BackupProfile
 
 class ProfileManager:
     """Manages backup profile operations."""
-    
+
     def __init__(self, parent_widget: QWidget = None):
         """Initialize the profile manager."""
         self.parent_widget = parent_widget
         self.config_manager = BackupConfigManager()
         self.current_profile: Optional[BackupProfile] = None
         self.current_profile_path: Optional[str] = None
-    
+
     def create_new_profile(self) -> bool:
         """Create a new backup profile."""
         name, ok = QInputDialog.getText(
@@ -28,14 +28,14 @@ class ProfileManager:
             "New Profile",
             "Enter profile name:"
         )
-        
+
         if ok and name.strip():
             self.current_profile = self.config_manager.create_profile(name.strip())
             self.current_profile_path = None
             return True
-        
+
         return False
-    
+
     def save_current_profile(self) -> bool:
         """Save the current profile."""
         if not self.current_profile:
@@ -45,14 +45,14 @@ class ProfileManager:
                 "No profile to save. Create a new profile first."
             )
             return False
-        
+
         if self.current_profile_path:
             # Save to existing file
             return self._save_to_file(self.current_profile_path)
         else:
             # No file path set, do "Save As"
             return self.save_profile_as()
-    
+
     def save_profile_as(self) -> bool:
         """Save the current profile to a new file."""
         if not self.current_profile:
@@ -62,7 +62,7 @@ class ProfileManager:
                 "No profile to save. Create a new profile first."
             )
             return False
-        
+
         # Get filename from user
         filename, _ = QFileDialog.getSaveFileName(
             self.parent_widget,
@@ -70,14 +70,14 @@ class ProfileManager:
             f"{self.current_profile.name}.yaml",
             "YAML files (*.yaml *.yml);;JSON files (*.json);;All files (*)"
         )
-        
+
         if filename:
             if self._save_to_file(filename):
                 self.current_profile_path = filename
                 return True
-        
+
         return False
-    
+
     def _save_to_file(self, file_path: str) -> bool:
         """Save the current profile to a specific file path."""
         try:
@@ -85,22 +85,22 @@ class ProfileManager:
             import json
             from datetime import datetime
             from pathlib import Path
-            
+
             # Update modification time
             self.current_profile.modified_at = datetime.now().isoformat()
-            
+
             # Convert to dict using the config manager
             profile_dict = self.config_manager._profile_to_dict(self.current_profile)
-            
+
             # Determine format based on file extension
             path = Path(file_path)
-            
+
             with open(file_path, 'w') as f:
                 if path.suffix.lower() == '.json':
                     json.dump(profile_dict, f, indent=2)
                 else:  # Default to YAML for .yaml, .yml, or any other extension
                     yaml.dump(profile_dict, f, default_flow_style=False, indent=2)
-            
+
             return True
         except (OSError, PermissionError, yaml.YAMLError, json.JSONEncodeError) as e:
             QMessageBox.critical(
@@ -109,7 +109,7 @@ class ProfileManager:
                 f"Failed to save profile: {str(e)}"
             )
             return False
-    
+
     def open_profile_file(self) -> bool:
         """Open a profile from file."""
         filename, _ = QFileDialog.getOpenFileName(
@@ -118,13 +118,13 @@ class ProfileManager:
             "",
             "YAML files (*.yaml *.yml);;JSON files (*.json);;All files (*)"
         )
-        
+
         if filename:
             try:
                 import yaml
                 import json
                 from pathlib import Path
-                
+
                 # Load the file directly
                 path = Path(filename)
                 with open(filename, 'r') as f:
@@ -132,7 +132,7 @@ class ProfileManager:
                         profile_dict = json.load(f)
                     else:
                         profile_dict = yaml.safe_load(f)
-                
+
                 # Convert to profile using the config manager
                 profile = self.config_manager._dict_to_profile(profile_dict)
                 self.current_profile = profile
@@ -162,31 +162,31 @@ class ProfileManager:
                     "Unexpected Error",
                     f"An unexpected error occurred while loading the profile: {str(e)}"
                 )
-        
+
         return False
-    
+
     def is_profile_saved(self) -> bool:
         """Check if the current profile has been saved."""
         return self.current_profile_path is not None
-    
+
     def has_profile(self) -> bool:
         """Check if there is a current profile."""
         return self.current_profile is not None
-    
+
     def get_profile_name(self) -> str:
         """Get the current profile name."""
         if self.current_profile:
             return self.current_profile.name
         return "No profile loaded"
-    
+
     def get_profile_path(self) -> Optional[str]:
         """Get the current profile file path."""
         return self.current_profile_path
-    
+
     def get_profile(self) -> Optional[BackupProfile]:
         """Get the current profile."""
         return self.current_profile
-    
+
     def set_profile(self, profile: BackupProfile):
         """Set the current profile."""
         self.current_profile = profile
