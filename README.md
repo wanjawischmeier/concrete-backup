@@ -52,10 +52,10 @@ poetry run python backup_engine.py <profile-name>
 
 ```bash
 concrete-backup/
-├── backup_config.py       # Profile data models and management
-├── backup_engine.py       # Core backup execution logic
 ├── backup_gui.py          # Main GUI application entry point
+├── backup_engine.py       # Core backup execution logic
 ├── backup_runner.py       # Backup execution runner
+├── backup_config.py       # Profile data models and management
 ├── ...
 ├── managers/              # Core management modules
 ├── workers/               # Background task workers
