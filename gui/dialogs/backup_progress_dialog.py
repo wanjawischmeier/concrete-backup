@@ -103,18 +103,18 @@ class BackupProgressDialog(QDialog):
         # Show summary dialog
         if success:
             QMessageBox.information(self, "Backup Complete",
-                                  "Backup completed successfully!\n\nSee log for details.")
+                                    "Backup completed successfully!\n\nSee log for details.")
         else:
             QMessageBox.warning(self, "Backup Errors",
-                              "Backup completed with errors.\n\nPlease check the log for details.")
+                                "Backup completed with errors.\n\nPlease check the log for details.")
 
     def closeEvent(self, event):
         """Handle dialog close event."""
         if self.worker and self.worker.isRunning():
             reply = QMessageBox.question(self, "Backup Running",
-                                       "Backup is still running. Are you sure you want to close?",
-                                       QMessageBox.Yes | QMessageBox.No,
-                                       QMessageBox.No)
+                                         "Backup is still running. Are you sure you want to close?",
+                                         QMessageBox.Yes | QMessageBox.No,
+                                         QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 self.worker.terminate()

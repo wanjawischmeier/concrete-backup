@@ -62,8 +62,8 @@ class DriveManager:
 
             # Skip loop devices and other virtual devices we don't want
             if (device_name.startswith('loop') or
-                device_name.startswith('ram') or
-                device.get('type') == 'rom'):
+                    device_name.startswith('ram') or
+                    device.get('type') == 'rom'):
                 continue
 
             # For partitions, include parent device info
@@ -94,7 +94,7 @@ class DriveManager:
         try:
             # Check if already mounted
             result = subprocess.run(['findmnt', mount_point],
-                                  capture_output=True, text=True)
+                                    capture_output=True, text=True)
             if result.returncode == 0:
                 return True, f"Already mounted at {mount_point}"
 

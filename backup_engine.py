@@ -247,69 +247,99 @@ class BackupEngine:
             Tuple of (success, message)
         """
         try:
-            # Check if destination is enabled
+            # Pre-flight checks
             if not destination.enabled:
                 return False, "Destination is disabled"
 
-            # Mount drive if needed
-            if destination.auto_mount and destination.drive_device:
-                mount_success, mount_msg = self.mount_drive(destination)
-                if not mount_success:
-                    return False, f"Failed to mount drive: {mount_msg}"
+            # Setup destination
+            setup_success, setup_msg = self._setup_destination(destination)
+            if not setup_success:
+                return False, setup_msg
 
-            # Ensure target directory exists
-            try:
-                os.makedirs(destination.target_path, exist_ok=True)
-            except (OSError, PermissionError) as e:
-                return False, f"Failed to create target directory: {str(e)}"
-
-            # Setup logging for this destination
+            # Setup logging and execute backup
             logger = self.setup_logging(destination.target_path)
-            logger.info(f"Starting backup to {destination.target_path}")
-            logger.info(f"Profile: {self.profile.name}")
-            logger.info(f"Sources: {len(self.profile.sources)} directories")
+            self._log_backup_start(logger, destination)
 
-            success = True
-
-            # Run pre-backup commands
-            if not self.run_custom_commands(self.profile.pre_commands, "pre-backup", logger):
-                logger.error("Pre-backup commands failed")
-                return False, "Pre-backup commands failed"
-
-            # Backup each source
-            failed_sources = []
-            for source in self.profile.sources:
-                if not source.enabled:
-                    logger.info(f"Skipping disabled source: {source.path}")
-                    continue
-
-                if not self.sync_directory(source.path, destination.target_path, logger):
-                    failed_sources.append(source.path)
-                    success = False
-
-            # Run post-backup commands only if sources succeeded
-            if success:
-                if not self.run_custom_commands(self.profile.post_commands, "post-backup", logger):
-                    logger.error("Post-backup commands failed")
-                    return False, "Post-backup commands failed"
-
-                logger.info("Backup completed successfully for this destination")
-                return True, "Backup completed successfully"
-            else:
-                logger.error(f"Backup failed for sources: {', '.join(failed_sources)}")
-                return False, f"Failed to backup sources: {', '.join(failed_sources)}"
+            # Execute backup workflow
+            return self._execute_backup_workflow(destination, logger)
 
         except (OSError, subprocess.SubprocessError, PermissionError, KeyboardInterrupt) as e:
-            error_msg = f"Unexpected error during backup: {str(e)}"
-            if hasattr(self, 'logger') and self.logger:
-                self.logger.error(error_msg)
-            return False, error_msg
+            return self._handle_backup_error(e)
         except Exception as e:
-            error_msg = f"Unexpected error during backup: {str(e)}"
-            if hasattr(self, 'logger') and self.logger:
-                self.logger.error(error_msg)
-                self.logger.exception("Full traceback:")
-            return False, error_msg
+            return self._handle_unexpected_error(e)
+
+    def _setup_destination(self, destination: BackupDestination) -> Tuple[bool, str]:
+        """Setup destination for backup (mounting, directory creation)."""
+        # Mount drive if needed
+        if destination.auto_mount and destination.drive_device:
+            mount_success, mount_msg = self.mount_drive(destination)
+            if not mount_success:
+                return False, f"Failed to mount drive: {mount_msg}"
+
+        # Ensure target directory exists
+        try:
+            os.makedirs(destination.target_path, exist_ok=True)
+            return True, "Destination setup successful"
+        except (OSError, PermissionError) as e:
+            return False, f"Failed to create target directory: {str(e)}"
+
+    def _log_backup_start(self, logger: logging.Logger, destination: BackupDestination) -> None:
+        """Log backup start information."""
+        logger.info(f"Starting backup to {destination.target_path}")
+        logger.info(f"Profile: {self.profile.name}")
+        logger.info(f"Sources: {len(self.profile.sources)} directories")
+
+    def _execute_backup_workflow(self, destination: BackupDestination, logger: logging.Logger) -> Tuple[bool, str]:
+        """Execute the complete backup workflow."""
+        # Run pre-backup commands
+        if not self.run_custom_commands(self.profile.pre_commands, "pre-backup", logger):
+            logger.error("Pre-backup commands failed")
+            return False, "Pre-backup commands failed"
+
+        # Backup each source
+        success, failed_sources = self._backup_all_sources(destination, logger)
+
+        # Run post-backup commands only if sources succeeded
+        if success:
+            if not self.run_custom_commands(self.profile.post_commands, "post-backup", logger):
+                logger.error("Post-backup commands failed")
+                return False, "Post-backup commands failed"
+
+            logger.info("Backup completed successfully for this destination")
+            return True, "Backup completed successfully"
+        else:
+            logger.error(f"Backup failed for sources: {', '.join(failed_sources)}")
+            return False, f"Failed to backup sources: {', '.join(failed_sources)}"
+
+    def _backup_all_sources(self, destination: BackupDestination, logger: logging.Logger) -> Tuple[bool, list]:
+        """Backup all enabled sources to destination."""
+        failed_sources = []
+
+        for source in self.profile.sources:
+            if not source.enabled:
+                logger.info(f"Skipping disabled source: {source.path}")
+                continue
+
+            if not self.sync_directory(source.path, destination.target_path, logger):
+                failed_sources.append(source.path)
+
+        success = len(failed_sources) == 0
+        return success, failed_sources
+
+    def _handle_backup_error(self, e: Exception) -> Tuple[bool, str]:
+        """Handle expected backup errors."""
+        error_msg = f"Backup error: {str(e)}"
+        if hasattr(self, 'logger') and self.logger:
+            self.logger.error(error_msg)
+        return False, error_msg
+
+    def _handle_unexpected_error(self, e: Exception) -> Tuple[bool, str]:
+        """Handle unexpected backup errors."""
+        error_msg = f"Unexpected error during backup: {str(e)}"
+        if hasattr(self, 'logger') and self.logger:
+            self.logger.error(error_msg)
+            self.logger.exception("Full traceback:")
+        return False, error_msg
 
 
 def main():

@@ -98,7 +98,7 @@ fi
         """Get the current root crontab."""
         try:
             result = subprocess.run(['crontab', '-l'],
-                                  capture_output=True, text=True)
+                                    capture_output=True, text=True)
             if result.returncode == 0:
                 return result.stdout
             else:
@@ -114,7 +114,7 @@ fi
                 temp_file = f.name
 
             result = subprocess.run(['crontab', temp_file],
-                                  capture_output=True, text=True)
+                                    capture_output=True, text=True)
             os.unlink(temp_file)
             return result.returncode == 0
 
@@ -241,7 +241,7 @@ fi
 
             # Day names
             day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
-                        'Friday', 'Saturday', 'Sunday']
+                         'Friday', 'Saturday', 'Sunday']
 
             # Format time
             time_str = f"{schedule.hour:02d}:{schedule.minute:02d}"
@@ -250,7 +250,7 @@ fi
             if schedule.days_of_week == list(range(7)):
                 # Find next occurrence
                 target_time = now.replace(hour=schedule.hour, minute=schedule.minute,
-                                        second=0, microsecond=0)
+                                          second=0, microsecond=0)
 
                 if target_time <= now:
                     target_time += timedelta(days=1)
