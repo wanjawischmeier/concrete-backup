@@ -13,6 +13,7 @@ from PyQt5.QtCore import Qt
 
 from backup_config import BackupProfile
 from drive_manager import DriveManager
+from cron_manager import CronManager
 from gui.tabs.sources_tab import SourcesTab
 from gui.tabs.destinations_tab import DestinationsTab
 from gui.tabs.schedule_tab import ScheduleTab
@@ -28,6 +29,7 @@ class BackupConfigView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.drive_manager = DriveManager()
+        self.cron_manager = CronManager(parent_widget=self)
 
         # UI elements
         self.profile_name_label = None
@@ -331,7 +333,10 @@ class BackupConfigView(QWidget):
         if not self.current_profile:
             enabled = False
         else:
-            enabled = self.current_profile.schedule.enabled
+            # Check if schedule is configured AND actually active in cron
+            schedule_configured = self.current_profile.schedule.enabled
+            cron_job_active = bool(self.cron_manager.get_backup_job_status())
+            enabled = schedule_configured and cron_job_active
 
         if enabled:
             self.schedule_toggle_btn.setText("Disable Scheduling")
@@ -398,7 +403,11 @@ class BackupConfigView(QWidget):
             self.schedule_mode_label.setStyleSheet("font-size: 11px; color: #666;")
             self.profile_info_group.setStyleSheet("QGroupBox { border: 2px solid #CCCCCC; }")
         else:
-            if self.current_profile.schedule.enabled:
+            # Check if schedule is configured AND actually active in cron
+            schedule_configured = self.current_profile.schedule.enabled
+            cron_job_active = bool(self.cron_manager.get_backup_job_status())
+            
+            if schedule_configured and cron_job_active:
                 # Get schedule details for display
                 hour = self.current_profile.schedule.hour
                 minute = self.current_profile.schedule.minute
