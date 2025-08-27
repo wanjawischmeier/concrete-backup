@@ -38,12 +38,6 @@ poetry run python backup_gui.py
 poetry run python backup_engine.py <profile-name>
 ```
 
-## Configuration
-
-- Backup profiles are stored in `~/.config/concrete-backup/profiles/` by default
-- Profiles can be saved as YAML files
-- Sources, destinations, and custom commands are configurable per profile
-
 ## Features
 
 - **Backup Profiles**: Create and manage multiple backup configurations
@@ -56,20 +50,23 @@ poetry run python backup_engine.py <profile-name>
 
 ## Project Structure
 
-```
+```bash
 concrete-backup/
-├── backup_config.py      # Profile data models and management
-├── backup_engine.py      # Core backup execution logic
-├── backup_gui.py         # Main GUI application entry point
-├── drive_manager.py      # Drive detection and mounting
-├── cron_manager.py       # Scheduled backup management
-├── gui/                  # GUI components
-│   ├── controllers/      # UI logic controllers
-│   ├── dialogs/         # Dialog windows
-│   ├── tabs/            # Configuration tabs
-│   ├── widgets/         # Reusable UI widgets
-│   └── workers/         # Background task workers
-└── run_backup_gui.sh    # Launcher script with privilege elevation
+├── backup_config.py       # Profile data models and management
+├── backup_engine.py       # Core backup execution logic
+├── backup_gui.py          # Main GUI application entry point
+├── backup_runner.py       # Backup execution runner
+├── ...
+├── managers/              # Core management modules
+├── workers/               # Background task workers
+├── gui/                   # GUI components
+│   ├── controllers/       # UI logic controllers
+│   ├── dialogs/           # Dialog windows
+│   ├── tabs/              # Configuration tabs
+│   └── ...
+├── .github/               # GitHub Actions CI/CD
+├── pyproject.toml         # Poetry project configuration
+└── run_backup_gui.sh      # Launcher script with privilege elevation
 ```
 
 ## Dependencies
