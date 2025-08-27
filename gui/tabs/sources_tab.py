@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 
 from backup_config import BackupProfile, BackupSource
 from gui.widgets.drive_selection_widget import DriveSelectionWidget
-from gui.widgets.directory_list_widget import DirectoryListWidget  
+from gui.widgets.directory_list_widget import DirectoryListWidget
 from gui.widgets.directory_picker import EnhancedDirectoryPicker
 from drive_manager import DriveManager
 

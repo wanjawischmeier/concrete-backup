@@ -33,8 +33,8 @@ class ScheduleUIController:
                 if not success and "cancelled" not in message.lower():
                     # Only show warning for non-cancellation errors
                     QMessageBox.warning(
-                        self.parent_widget, 
-                        "Schedule Update Error", 
+                        self.parent_widget,
+                        "Schedule Update Error",
                         f"Failed to update schedule: {message}"
                     )
 
@@ -69,8 +69,8 @@ class ScheduleUIController:
             success, message = self.cron_manager.add_backup_job(profile)
             if not success:
                 QMessageBox.warning(
-                    self.parent_widget, 
-                    "Scheduling Error", 
+                    self.parent_widget,
+                    "Scheduling Error",
                     f"Failed to schedule backup: {message}"
                 )
                 self.schedule_enabled_cb.setChecked(False)

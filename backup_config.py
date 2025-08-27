@@ -204,35 +204,63 @@ class BackupConfigManager:
         """Validate a backup profile and return list of errors."""
         errors = []
 
+        # Basic validation
+        errors.extend(self._validate_basic_fields(profile))
+
+        # Validate sources and destinations
+        errors.extend(self._validate_sources(profile.sources))
+        errors.extend(self._validate_destinations(profile.destinations))
+
+        # Validate schedule
+        errors.extend(self._validate_schedule(profile.schedule))
+
+        return errors
+
+    def _validate_basic_fields(self, profile: BackupProfile) -> List[str]:
+        """Validate basic profile fields."""
+        errors = []
+
         if not profile.name:
             errors.append("Profile name is required")
-
         if not profile.sources:
             errors.append("At least one source directory is required")
-
         if not profile.destinations:
             errors.append("At least one destination is required")
 
-        # Validate sources
-        for i, source in enumerate(profile.sources):
+        return errors
+
+    def _validate_sources(self, sources: List[BackupSource]) -> List[str]:
+        """Validate source directories."""
+        errors = []
+
+        for i, source in enumerate(sources):
             if not source.path:
-                errors.append(f"Source {i+1}: Path is required")
+                errors.append(f"Source {i + 1}: Path is required")
             elif not source.is_valid():
-                errors.append(f"Source {i+1}: Path does not exist: {source.path}")
+                errors.append(f"Source {i + 1}: Path does not exist: {source.path}")
 
-        # Validate destinations
-        for i, dest in enumerate(profile.destinations):
+        return errors
+
+    def _validate_destinations(self, destinations: List[BackupDestination]) -> List[str]:
+        """Validate backup destinations."""
+        errors = []
+
+        for i, dest in enumerate(destinations):
             if not dest.target_path:
-                errors.append(f"Destination {i+1}: Target path is required")
-
+                errors.append(f"Destination {i + 1}: Target path is required")
             if dest.auto_mount and not dest.drive_device:
-                errors.append(f"Destination {i+1}: Drive device required for auto-mount")
+                errors.append(f"Destination {i + 1}: Drive device required for auto-mount")
 
-        # Validate schedule
-        if profile.schedule.enabled:
-            if not (0 <= profile.schedule.hour <= 23):
+        return errors
+
+    def _validate_schedule(self, schedule) -> List[str]:
+        """Validate backup schedule."""
+        errors = []
+
+        if schedule.enabled:
+            if not (0 <= schedule.hour <= 23):
                 errors.append("Schedule hour must be between 0 and 23")
-            if not (0 <= profile.schedule.minute <= 59):
+            if not (0 <= schedule.minute <= 59):
                 errors.append("Schedule minute must be between 0 and 59")
 
         return errors

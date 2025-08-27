@@ -13,8 +13,8 @@ from typing import List, Dict
 class DriveInfo:
     """Data class for drive information."""
 
-    def __init__(self, device: str, uuid: str = "", label: str = "", 
-                 fstype: str = "", size: str = "", mountpoint: str = "", 
+    def __init__(self, device: str, uuid: str = "", label: str = "",
+                 fstype: str = "", size: str = "", mountpoint: str = "",
                  is_mounted: bool = False, is_removable: bool = False):
         self.device = device
         self.uuid = uuid
@@ -42,7 +42,7 @@ class DriveManager:
         try:
             # Use lsblk to get block device information
             result = subprocess.run([
-                'lsblk', '-J', '-o', 
+                'lsblk', '-J', '-o',
                 'NAME,UUID,LABEL,FSTYPE,SIZE,MOUNTPOINT,TYPE,HOTPLUG'
             ], capture_output=True, text=True, check=True)
 
@@ -61,7 +61,7 @@ class DriveManager:
             device_path = f"/dev/{device_name}"
 
             # Skip loop devices and other virtual devices we don't want
-            if (device_name.startswith('loop') or 
+            if (device_name.startswith('loop') or
                 device_name.startswith('ram') or
                 device.get('type') == 'rom'):
                 continue
@@ -93,7 +93,7 @@ class DriveManager:
         """Mount a drive to the specified mount point."""
         try:
             # Check if already mounted
-            result = subprocess.run(['findmnt', mount_point], 
+            result = subprocess.run(['findmnt', mount_point],
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 return True, f"Already mounted at {mount_point}"

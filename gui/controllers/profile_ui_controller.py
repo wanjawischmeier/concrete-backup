@@ -128,8 +128,8 @@ class ProfileUIController:
         errors = self.config_manager.validate_profile(self.current_profile)
         if errors:
             QMessageBox.warning(
-                self.parent_widget, 
-                "Validation Error", 
+                self.parent_widget,
+                "Validation Error",
                 "Profile validation failed: " + ", ".join(errors)
             )
             return False

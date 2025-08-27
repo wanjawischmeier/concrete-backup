@@ -4,7 +4,7 @@ Command list widget for GUI components.
 """
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QGroupBox, QListWidget, QListWidgetItem, QInputDialog, QMessageBox
 )
 from PyQt5.QtCore import Qt
@@ -52,7 +52,7 @@ class CommandListWidget(QWidget):
     def add_command(self):
         """Add a new command."""
         command, ok = QInputDialog.getText(
-            self, "Add Command", 
+            self, "Add Command",
             "Enter shell command:"
         )
 
@@ -70,7 +70,7 @@ class CommandListWidget(QWidget):
 
         current_command = current_item.data(Qt.UserRole)
         command, ok = QInputDialog.getText(
-            self, "Edit Command", 
+            self, "Edit Command",
             "Edit shell command:",
             text=current_command
         )

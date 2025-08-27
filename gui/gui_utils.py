@@ -5,7 +5,7 @@ GUI utilities for password prompts and system operations
 
 import subprocess
 from typing import Tuple
-from PyQt5.QtWidgets import QInputDialog, QLineEdit, QMessageBox, QWidget
+from PyQt5.QtWidgets import QInputDialog, QMessageBox, QWidget
 
 
 class SudoHelper:
@@ -25,80 +25,83 @@ class SudoHelper:
             Tuple of (success, output_or_error_message)
         """
         try:
-            # First check if we already have sudo privileges
-            check_result = subprocess.run(['sudo', '-n', 'true'], 
-                                        capture_output=True, text=True)
+            # Check if we already have sudo privileges
+            if SudoHelper._has_sudo_privileges():
+                return SudoHelper._run_sudo_command(command)
 
-            if check_result.returncode == 0:
-                # We already have sudo privileges, run command directly
-                result = subprocess.run(['sudo'] + command, 
-                                      capture_output=True, text=True)
-                if result.returncode == 0:
-                    return True, result.stdout
-                else:
-                    return False, result.stderr
+            # Need to authenticate
+            return SudoHelper._authenticate_and_run(command, parent, max_retries)
 
-            # We need to prompt for password
-            for attempt in range(max_retries):
-                title = "Administrator Password Required"
-                if attempt > 0:
-                    title = f"Administrator Password Required (Attempt {attempt + 1}/{max_retries})"
+        except (subprocess.SubprocessError, OSError) as e:
+            return False, f"Error running command: {str(e)}"
 
-                password, ok = QInputDialog.getText(
-                    parent, 
-                    title,
-                    "Enter your password to perform administrative operations:",
-                    QLineEdit.Password
-                )
+    @staticmethod
+    def _has_sudo_privileges() -> bool:
+        """Check if current user already has sudo privileges."""
+        try:
+            result = subprocess.run(['sudo', '-n', 'true'], capture_output=True, text=True)
+            return result.returncode == 0
+        except (subprocess.SubprocessError, OSError):
+            return False
 
-                if not ok:
-                    # User cancelled
-                    return False, "Operation cancelled by user"
+    @staticmethod
+    def _run_sudo_command(command: list) -> Tuple[bool, str]:
+        """Run a command with sudo."""
+        try:
+            result = subprocess.run(['sudo'] + command, capture_output=True, text=True)
+            if result.returncode == 0:
+                return True, result.stdout.strip()
+            else:
+                return False, result.stderr.strip()
+        except (subprocess.SubprocessError, OSError) as e:
+            return False, f"Error executing command: {str(e)}"
 
-                if not password:
-                    # Empty password, show warning and try again
-                    if attempt < max_retries - 1:
-                        QMessageBox.warning(parent, "Empty Password", 
-                                          "Password cannot be empty. Please try again.")
-                        continue
-                    else:
-                        return False, "Maximum password attempts exceeded"
+    @staticmethod
+    def _authenticate_and_run(command: list, parent: QWidget, max_retries: int) -> Tuple[bool, str]:
+        """Authenticate user and run command."""
+        for attempt in range(max_retries):
+            password, ok = QInputDialog.getText(
+                parent, "Authentication Required",
+                f"Enter password for sudo (attempt {attempt + 1}/{max_retries}):",
+                QInputDialog.Password
+            )
 
-                # Use the password with sudo
-                full_command = ['sudo', '-S'] + command
-                process = subprocess.Popen(
-                    full_command,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
+            if not ok:
+                return False, "Authentication cancelled by user"
 
-                stdout, stderr = process.communicate(input=password + '\n')
+            success, message = SudoHelper._try_sudo_with_password(command, password)
+            if success:
+                return True, message
 
-                if process.returncode == 0:
-                    return True, stdout
-                else:
-                    # Check if it's a password error
-                    if ("password" in stderr.lower() or 
-                        "incorrect" in stderr.lower() or
-                        "authentication failure" in stderr.lower()):
+            if attempt < max_retries - 1:
+                QMessageBox.warning(parent, "Authentication Failed", "Incorrect password. Please try again.")
 
-                        if attempt < max_retries - 1:
-                            QMessageBox.warning(parent, "Authentication Failed", 
-                                              f"Incorrect password. Please try again.\n\n"
-                                              f"Attempts remaining: {max_retries - attempt - 1}")
-                            continue
-                        else:
-                            return False, "Maximum password attempts exceeded"
-                    else:
-                        # Some other error
-                        return False, stderr
+        return False, "Authentication failed after maximum attempts"
 
-            return False, "Maximum password attempts exceeded"
+    @staticmethod
+    def _try_sudo_with_password(command: list, password: str) -> Tuple[bool, str]:
+        """Try to run sudo command with provided password."""
+        try:
+            process = subprocess.Popen(
+                ['sudo', '-S'] + command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
 
-        except (OSError, subprocess.SubprocessError, PermissionError) as e:
-            return False, f"Error running sudo command: {str(e)}"
+            stdout, stderr = process.communicate(input=password + '\n', timeout=30)
+
+            if process.returncode == 0:
+                return True, stdout.strip()
+            else:
+                return False, stderr.strip()
+
+        except subprocess.TimeoutExpired:
+            process.kill()
+            return False, "Command timed out"
+        except (subprocess.SubprocessError, OSError) as e:
+            return False, f"Error executing command: {str(e)}"
 
     @staticmethod
     def check_sudo_available() -> bool:
@@ -106,5 +109,5 @@ class SudoHelper:
         try:
             result = subprocess.run(['sudo', '-v'], capture_output=True, text=True)
             return result.returncode == 0
-        except:
+        except (subprocess.SubprocessError, OSError):
             return False

@@ -146,7 +146,7 @@ class BackupConfigView(QWidget):
 
         # Register tabs with profile controller
         self.profile_controller.register_tabs(
-            self.sources_tab, self.destinations_tab, 
+            self.sources_tab, self.destinations_tab,
             self.schedule_tab, self.custom_commands_tab
         )
 
@@ -201,8 +201,8 @@ class BackupConfigView(QWidget):
 
         enabled = state == Qt.Checked
         result = self.schedule_controller.handle_schedule_toggle(
-            enabled, 
-            self.current_profile, 
+            enabled,
+            self.current_profile,
             lambda: self.profile_controller.is_profile_saved()
         )
 

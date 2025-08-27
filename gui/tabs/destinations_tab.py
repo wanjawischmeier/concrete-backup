@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 
 from backup_config import BackupProfile, BackupDestination
 from gui.widgets.drive_selection_widget import DriveSelectionWidget
-from gui.widgets.directory_list_widget import DirectoryListWidget  
+from gui.widgets.directory_list_widget import DirectoryListWidget
 from gui.widgets.directory_picker import EnhancedDirectoryPicker
 from drive_manager import DriveManager
 
@@ -73,6 +73,7 @@ class DestinationsTab(QWidget):
             )
             self.parent_widget.current_profile.destinations.append(destination)
             self.load_from_profile(self.parent_widget.current_profile)
+
     def remove_destination(self):
         """Remove selected destination."""
         dest = self.destinations_list.get_selected_item_data()

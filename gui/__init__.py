@@ -17,7 +17,7 @@ from gui.dialogs.backup_progress_dialog import BackupProgressDialog
 
 __all__ = [
     'MainWindow',
-    'BackupConfigView', 
+    'BackupConfigView',
     'SourcesTab',
     'DestinationsTab',
     'ScheduleTab',

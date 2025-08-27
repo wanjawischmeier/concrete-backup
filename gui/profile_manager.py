@@ -154,7 +154,8 @@ class ProfileManager:
                 QMessageBox.critical(
                     self.parent_widget,
                     "Profile Data Error",
-                    f"Invalid profile data: {str(e)}\n\nThis profile may be from an incompatible version or have missing required fields."
+                    f"Invalid profile data: {str(e)}\n\n"
+                    f"This profile may be from an incompatible version or have missing required fields."
                 )
             except Exception as e:
                 QMessageBox.critical(

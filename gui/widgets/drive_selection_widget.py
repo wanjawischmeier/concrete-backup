@@ -4,7 +4,7 @@ Drive selection widget for GUI components.
 """
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton,
     QGroupBox, QCheckBox
 )
 from PyQt5.QtCore import pyqtSignal

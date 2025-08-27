@@ -74,7 +74,7 @@ class BackupEngine:
             return True, "Auto-mount disabled"
 
         success, message = self.drive_manager.mount_drive(
-            destination.drive_device, 
+            destination.drive_device,
             destination.mount_point
         )
 
@@ -93,10 +93,10 @@ class BackupEngine:
 
         for i, cmd in enumerate(commands):
             if not cmd.enabled:
-                logger.info(f"Skipping disabled {phase} command {i+1}: {cmd.description}")
+                logger.info(f"Skipping disabled {phase} command {i + 1}: {cmd.description}")
                 continue
 
-            logger.info(f"Running {phase} command {i+1}: {cmd.description}")
+            logger.info(f"Running {phase} command {i + 1}: {cmd.description}")
             logger.info(f"Command: {cmd.command}")
 
             try:
@@ -109,7 +109,7 @@ class BackupEngine:
                 )
 
                 if result.returncode == 0:
-                    logger.info(f"Command completed successfully")
+                    logger.info("Command completed successfully")
                     if result.stdout:
                         logger.info(f"Output: {result.stdout}")
                 else:
@@ -137,50 +137,62 @@ class BackupEngine:
             # Ensure destination directory exists
             dest_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Use rsync for efficient synchronization
-            cmd = [
-                'rsync',
-                '-av',  # archive mode, verbose
-                '--delete',  # delete files that don't exist in source
-                '--progress',
-                f"{source}/",  # trailing slash important for rsync
-                str(dest_path)
-            ]
-
-            if self.profile.dry_run:
-                cmd.append('--dry-run')
-                logger.info("DRY RUN MODE - No files will actually be copied")
-
+            # Build and run rsync command
+            cmd = self._build_rsync_command(source, dest_path, logger)
             result = subprocess.run(cmd, capture_output=True, text=True)
 
-            if result.returncode == 0:
-                logger.info(f"Successfully synced {source}")
-                if result.stdout:
-                    # Log rsync output (but limit it to avoid huge logs)
-                    lines = result.stdout.split('\n')
-                    if len(lines) > 50:
-                        logger.info(f"Rsync output (first 25 and last 25 lines):")
-                        for line in lines[:25]:
-                            if line.strip():
-                                logger.info(f"  {line}")
-                        logger.info("  ... (output truncated) ...")
-                        for line in lines[-25:]:
-                            if line.strip():
-                                logger.info(f"  {line}")
-                    else:
-                        logger.info("Rsync output:")
-                        for line in lines:
-                            if line.strip():
-                                logger.info(f"  {line}")
-                return True
-            else:
-                logger.error(f"Rsync failed for {source}")
-                logger.error(f"Error: {result.stderr}")
-                return False
+            return self._process_rsync_result(result, source, logger)
 
         except (OSError, subprocess.SubprocessError, PermissionError, FileNotFoundError) as e:
             logger.error(f"Error syncing {source}: {str(e)}")
             return False
+
+    def _build_rsync_command(self, source: str, dest_path: Path, logger: logging.Logger) -> list:
+        """Build the rsync command with appropriate options."""
+        cmd = [
+            'rsync',
+            '-av',  # archive mode, verbose
+            '--delete',  # delete files that don't exist in source
+            '--progress',
+            f"{source}/",  # trailing slash important for rsync
+            str(dest_path)
+        ]
+
+        if self.profile.dry_run:
+            cmd.append('--dry-run')
+            logger.info("DRY RUN MODE - No files will actually be copied")
+
+        return cmd
+
+    def _process_rsync_result(self, result: subprocess.CompletedProcess, source: str, logger: logging.Logger) -> bool:
+        """Process the result of rsync command."""
+        if result.returncode == 0:
+            logger.info(f"Successfully synced {source}")
+            if result.stdout:
+                self._log_rsync_output(result.stdout, logger)
+            return True
+        else:
+            logger.error(f"Rsync failed for {source}")
+            logger.error(f"Error: {result.stderr}")
+            return False
+
+    def _log_rsync_output(self, stdout: str, logger: logging.Logger) -> None:
+        """Log rsync output with appropriate truncation."""
+        lines = stdout.split('\n')
+        if len(lines) > 50:
+            logger.info("Rsync output (first 25 and last 25 lines):")
+            for line in lines[:25]:
+                if line.strip():
+                    logger.info(f"  {line}")
+            logger.info("  ... (output truncated) ...")
+            for line in lines[-25:]:
+                if line.strip():
+                    logger.info(f"  {line}")
+        else:
+            logger.info("Rsync output:")
+            for line in lines:
+                if line.strip():
+                    logger.info(f"  {line}")
 
     def run_backup(self) -> bool:
         """Execute the complete backup process for all destinations."""

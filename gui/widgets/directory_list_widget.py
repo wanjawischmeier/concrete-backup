@@ -4,7 +4,7 @@ Directory list widget for GUI components.
 """
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QGroupBox, QListWidget, QListWidgetItem
 )
 from PyQt5.QtCore import Qt

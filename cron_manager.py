@@ -55,11 +55,6 @@ class CronManager:
         # Get the path to the backup engine
         engine_path = Path(__file__).parent.absolute() / "backup_engine.py"
 
-        # Get the current Python interpreter path
-        python_path = subprocess.check_output([
-            "which", "python3"
-        ], text=True).strip()
-
         # Create the script content
         script_content = f"""#!/bin/bash
 # Concrete Backup Script for profile: {profile_name}
@@ -102,7 +97,7 @@ fi
     def get_current_crontab(self) -> str:
         """Get the current root crontab."""
         try:
-            result = subprocess.run(['crontab', '-l'], 
+            result = subprocess.run(['crontab', '-l'],
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 return result.stdout
@@ -118,7 +113,7 @@ fi
                 f.write(content)
                 temp_file = f.name
 
-            result = subprocess.run(['crontab', temp_file], 
+            result = subprocess.run(['crontab', temp_file],
                                   capture_output=True, text=True)
             os.unlink(temp_file)
             return result.returncode == 0
@@ -128,7 +123,7 @@ fi
             if 'temp_file' in locals():
                 try:
                     os.unlink(temp_file)
-                except:
+                except OSError:
                     pass
             return False
 
@@ -242,12 +237,10 @@ fi
 
         try:
             from datetime import datetime, timedelta
-            import calendar
-
             now = datetime.now()
 
             # Day names
-            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 
+            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
                         'Friday', 'Saturday', 'Sunday']
 
             # Format time
@@ -256,7 +249,7 @@ fi
             # Daily backup
             if schedule.days_of_week == list(range(7)):
                 # Find next occurrence
-                target_time = now.replace(hour=schedule.hour, minute=schedule.minute, 
+                target_time = now.replace(hour=schedule.hour, minute=schedule.minute,
                                         second=0, microsecond=0)
 
                 if target_time <= now:

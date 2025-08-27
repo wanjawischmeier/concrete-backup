@@ -12,11 +12,11 @@ class EnhancedDirectoryPicker:
     """Simple directory picker that works with root privileges."""
 
     @staticmethod
-    def get_directory(parent: QWidget = None, 
-                     caption: str = "Select Directory",
-                     base_path: str = "/",
-                     require_drive_selection: bool = False,
-                     selected_drive = None) -> Optional[str]:
+    def get_directory(parent: QWidget = None,
+                      caption: str = "Select Directory",
+                      base_path: str = "/",
+                      require_drive_selection: bool = False,
+                      selected_drive=None) -> Optional[str]:
         """
         Get a directory path using the standard file dialog.
 

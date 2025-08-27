@@ -4,7 +4,7 @@ Schedule Tab for configuring backup schedules
 """
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QCheckBox, QGroupBox, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QCheckBox, QGroupBox,
     QGridLayout, QTimeEdit
 )
 from PyQt5.QtCore import Qt, QTime
@@ -85,8 +85,8 @@ class ScheduleTab(QWidget):
             self.parent_widget.update_schedule_status()
 
         # Update the profile with current settings if we have one
-        if (hasattr(self.parent_widget, 'current_profile') and 
-            self.parent_widget.current_profile):
+        if (hasattr(self.parent_widget, 'current_profile') and
+                self.parent_widget.current_profile):
             self.save_to_profile(self.parent_widget.current_profile)
 
     def toggle_daily_backup(self, state):
@@ -134,7 +134,9 @@ class ScheduleTab(QWidget):
 
     def update_cron_status(self):
         """Update the cron status display."""
-        if not self.parent_widget or not hasattr(self.parent_widget, 'current_profile') or not self.parent_widget.current_profile:
+        if (not self.parent_widget or
+                not hasattr(self.parent_widget, 'current_profile') or
+                not self.parent_widget.current_profile):
             self.cron_status_label.setText("No profile loaded")
             return
 

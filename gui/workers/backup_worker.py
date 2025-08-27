@@ -55,7 +55,7 @@ class BackupWorker(QThread):
                     self.progress.emit(f"Skipping disabled destination: {destination.target_path}")
                     continue
 
-                self.progress.emit(f"Backing up to destination {i+1}/{len(profile.destinations)}: {destination.target_path}")
+                self.progress.emit(f"Backing up to destination {i + 1}/{len(profile.destinations)}: {destination.target_path}")
 
                 try:
                     success, message = engine.run_backup_to_destination(destination)
@@ -74,7 +74,7 @@ class BackupWorker(QThread):
                     total_success = False
 
             # Final result
-            final_message = f"Backup completed. Results:\n" + "\n".join(backup_results)
+            final_message = "Backup completed. Results:\n" + "\n".join(backup_results)
             self.finished.emit(total_success, final_message)
 
         except Exception as e:
