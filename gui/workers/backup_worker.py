@@ -1,83 +1,117 @@
 #!/usr/bin/env python3
 """
-Backup Worker for running backups in separate thread.
+Backup Worker Thread
 """
 
+import logging
+import sys
 from PyQt5.QtCore import QThread, pyqtSignal
+from backup_config import BackupProfile
 from backup_engine import BackupEngine
-from backup_config import BackupConfigManager
+
+
+class QtLogHandler(logging.Handler):
+    """Custom logging handler that emits Qt signals."""
+
+    def __init__(self, signal):
+        super().__init__()
+        self.signal = signal
+
+    def emit(self, record):
+        """Emit log record as Qt signal."""
+        msg = self.format(record)
+        self.signal.emit(msg)
+
+
+class StdoutCapture:
+    """Capture stdout and emit as Qt signal."""
+
+    def __init__(self, signal):
+        self.signal = signal
+        self.original_stdout = sys.stdout
+
+    def write(self, text):
+        """Write to both original stdout and emit signal."""
+        if text.strip():  # Only emit non-empty lines
+            self.signal.emit(text.strip())
+        self.original_stdout.write(text)
+
+    def flush(self):
+        """Flush original stdout."""
+        self.original_stdout.flush()
 
 
 class BackupWorker(QThread):
-    """Worker thread for running backups."""
+    """Worker thread for running backups in the background."""
 
-    # Signals
-    progress = pyqtSignal(str)  # Progress message
-    error = pyqtSignal(str)     # Error message
-    finished = pyqtSignal(bool, str)  # Success, final message
+    progress = pyqtSignal(str)
+    error = pyqtSignal(str)
+    finished = pyqtSignal(bool, str)
+    log_message = pyqtSignal(str)  # New signal for detailed logs
 
-    def __init__(self, profile_name: str, parent=None):
-        super().__init__(parent)
-        self.profile_name = profile_name
-        self.config_manager = BackupConfigManager()
+    def __init__(self, profile: BackupProfile):
+        super().__init__()
+        self.profile = profile
+        self.backup_engine = BackupEngine()
 
     def run(self):
-        """Run the backup in the background thread."""
+        """Run the backup process."""
         try:
-            self.progress.emit(f"Starting backup for profile: {self.profile_name}")
+            self.progress.emit(f"Starting backup for profile: {self.profile.name}")
 
-            # Load profile
-            profile = self.config_manager.load_profile(self.profile_name)
+            # Setup logging capture
+            self._setup_logging_capture()
+
+            # Use the profile object directly instead of loading by name
+            profile = self.profile
+
             if not profile:
-                self.error.emit(f"Profile '{self.profile_name}' not found")
-                self.finished.emit(False, "Profile not found")
+                self.error.emit("Profile not found or failed to load")
+                self.finished.emit(False, "Profile not found or failed to load")
                 return
 
-            # Validate profile
-            errors = self.config_manager.validate_profile(profile)
-            if errors:
-                error_msg = "Profile validation failed: " + ", ".join(errors)
+            success = self.backup_engine.run_backup(profile)
+            if success:
+                success_msg = "Backup completed successfully!"
+                self.progress.emit(success_msg)
+                self.finished.emit(True, success_msg)
+            else:
+                error_msg = "Backup failed - check logs for details"
                 self.error.emit(error_msg)
                 self.finished.emit(False, error_msg)
-                return
-
-            # Initialize backup engine
-            engine = BackupEngine(self.profile_name, self.config_manager)
-
-            self.progress.emit(f"Backup engine initialized for {len(profile.sources)} sources")
-
-            # Run backup for each destination
-            total_success = True
-            backup_results = []
-
-            for i, destination in enumerate(profile.destinations):
-                if not destination.enabled:
-                    self.progress.emit(f"Skipping disabled destination: {destination.target_path}")
-                    continue
-
-                self.progress.emit(f"Backing up to destination {i + 1}/{len(profile.destinations)}: {destination.target_path}")
-
-                try:
-                    success, message = engine.run_backup_to_destination(destination)
-                    if success:
-                        self.progress.emit(f"✓ Backup to {destination.target_path} completed successfully")
-                        backup_results.append(f"✓ {destination.target_path}: Success")
-                    else:
-                        self.error.emit(f"✗ Backup to {destination.target_path} failed: {message}")
-                        backup_results.append(f"✗ {destination.target_path}: {message}")
-                        total_success = False
-
-                except Exception as e:
-                    error_msg = f"Error backing up to {destination.target_path}: {str(e)}"
-                    self.error.emit(error_msg)
-                    backup_results.append(f"✗ {destination.target_path}: {str(e)}")
-                    total_success = False
-
-            # Final result
-            final_message = "Backup completed. Results:\n" + "\n".join(backup_results)
-            self.finished.emit(total_success, final_message)
 
         except Exception as e:
-            error_msg = f"Backup failed with error: {str(e)}"
+            error_msg = f"Backup error: {str(e)}"
             self.error.emit(error_msg)
             self.finished.emit(False, error_msg)
+        finally:
+            # Restore stdout
+            self._restore_stdout()
+
+    def _setup_logging_capture(self):
+        """Setup logging to capture backup engine output."""
+        # Capture stdout (print statements)
+        self.stdout_capture = StdoutCapture(self.log_message)
+        sys.stdout = self.stdout_capture
+
+        # Create a custom handler for loggers
+        self.qt_handler = QtLogHandler(self.log_message)
+        self.qt_handler.setLevel(logging.INFO)
+
+        # Set up formatter
+        formatter = logging.Formatter('%(levelname)s - %(message)s')
+        self.qt_handler.setFormatter(formatter)
+
+        # Add handler to root logger to catch all logging
+        root_logger = logging.getLogger()
+        root_logger.addHandler(self.qt_handler)
+        root_logger.setLevel(logging.INFO)
+
+    def _restore_stdout(self):
+        """Restore original stdout and remove logging handlers."""
+        if hasattr(self, 'stdout_capture'):
+            sys.stdout = self.stdout_capture.original_stdout
+
+        if hasattr(self, 'qt_handler'):
+            root_logger = logging.getLogger()
+            root_logger.removeHandler(self.qt_handler)

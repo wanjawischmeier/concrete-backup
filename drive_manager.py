@@ -61,9 +61,9 @@ class DriveManager:
             device_path = f"/dev/{device_name}"
 
             # Skip loop devices and other virtual devices we don't want
-            if (device_name.startswith('loop') or
-                    device_name.startswith('ram') or
-                    device.get('type') == 'rom'):
+            if (device_name.startswith('loop')
+                    or device_name.startswith('ram')
+                    or device.get('type') == 'rom'):
                 continue
 
             # For partitions, include parent device info

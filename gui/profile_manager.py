@@ -68,7 +68,7 @@ class ProfileManager:
             self.parent_widget,
             "Save Profile As",
             f"{self.current_profile.name}.yaml",
-            "YAML files (*.yaml *.yml);;JSON files (*.json);;All files (*)"
+            "YAML files (*.yaml *.yml);;All files (*)"
         )
 
         if filename:
@@ -81,28 +81,22 @@ class ProfileManager:
     def _save_to_file(self, file_path: str) -> bool:
         """Save the current profile to a specific file path."""
         try:
-            import yaml
-            import json
             from datetime import datetime
-            from pathlib import Path
 
             # Update modification time
             self.current_profile.modified_at = datetime.now().isoformat()
 
-            # Convert to dict using the config manager
-            profile_dict = self.config_manager._profile_to_dict(self.current_profile)
-
-            # Determine format based on file extension
-            path = Path(file_path)
-
-            with open(file_path, 'w') as f:
-                if path.suffix.lower() == '.json':
-                    json.dump(profile_dict, f, indent=2)
-                else:  # Default to YAML for .yaml, .yml, or any other extension
-                    yaml.dump(profile_dict, f, default_flow_style=False, indent=2)
-
-            return True
-        except (OSError, PermissionError, yaml.YAMLError, json.JSONEncodeError) as e:
+            # Always save as YAML
+            if self.config_manager.save_profile(self.current_profile, file_path):
+                return True
+            else:
+                QMessageBox.critical(
+                    self.parent_widget,
+                    "Save Error",
+                    "Failed to save profile file"
+                )
+                return False
+        except Exception as e:
             QMessageBox.critical(
                 self.parent_widget,
                 "Save Error",
@@ -116,52 +110,25 @@ class ProfileManager:
             self.parent_widget,
             "Open Profile",
             "",
-            "YAML files (*.yaml *.yml);;JSON files (*.json);;All files (*)"
+            "YAML files (*.yaml *.yml);;All files (*)"
         )
 
         if filename:
             try:
-                import yaml
-                import json
-                from pathlib import Path
-
-                # Load the file directly
-                path = Path(filename)
-                with open(filename, 'r') as f:
-                    if path.suffix.lower() == '.json':
-                        profile_dict = json.load(f)
-                    else:
-                        profile_dict = yaml.safe_load(f)
-
-                # Convert to profile using the config manager
-                profile = self.config_manager._dict_to_profile(profile_dict)
-                self.current_profile = profile
-                self.current_profile_path = filename
-                return True
-            except (OSError, PermissionError, FileNotFoundError) as e:
-                QMessageBox.critical(
-                    self.parent_widget,
-                    "File Error",
-                    f"Could not read profile file: {str(e)}"
-                )
-            except (yaml.YAMLError, json.JSONDecodeError) as e:
-                QMessageBox.critical(
-                    self.parent_widget,
-                    "Format Error",
-                    f"Invalid file format: {str(e)}"
-                )
-            except (ValueError, KeyError, TypeError) as e:
-                QMessageBox.critical(
-                    self.parent_widget,
-                    "Profile Data Error",
-                    f"Invalid profile data: {str(e)}\n\n"
-                    f"This profile may be from an incompatible version or have missing required fields."
-                )
+                # Use the config manager's new load method
+                profile = self.config_manager.load_profile_from_file(filename)
+                if profile:
+                    self.current_profile = profile
+                    self.current_profile_path = filename
+                    return True
+                else:
+                    QMessageBox.critical(self.parent_widget, "Error", "Failed to load profile file")
+                    return False
             except Exception as e:
                 QMessageBox.critical(
                     self.parent_widget,
-                    "Unexpected Error",
-                    f"An unexpected error occurred while loading the profile: {str(e)}"
+                    "Error",
+                    f"Failed to load profile: {str(e)}"
                 )
 
         return False

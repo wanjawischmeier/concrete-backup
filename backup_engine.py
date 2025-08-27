@@ -12,24 +12,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
-from backup_config import BackupConfigManager, BackupDestination
+from backup_config import BackupConfigManager, BackupDestination, BackupProfile
 from drive_manager import DriveManager
 
 
 class BackupEngine:
     """Handles backup execution and drive management."""
 
-    def __init__(self, profile_name: str, config_manager: BackupConfigManager = None):
-        """Initialize the backup engine."""
-        if config_manager is None:
-            config_manager = BackupConfigManager()
-
-        self.config_manager = config_manager
-        self.profile = config_manager.load_profile(profile_name)
-
-        if not self.profile:
-            raise ValueError(f"Profile '{profile_name}' not found")
-
+    def __init__(self, profile: BackupProfile = None):
+        """Initialize the backup engine with a profile object."""
+        self.profile = profile
         self.logger = None
         self.mounted_drives = []  # Track what we mounted
         self.drive_manager = DriveManager()  # For drive operations
@@ -126,7 +118,7 @@ class BackupEngine:
 
         return True
 
-    def sync_directory(self, source: str, destination: str, logger: logging.Logger) -> bool:
+    def sync_directory(self, source: str, destination: str, logger: logging.Logger, profile: BackupProfile) -> bool:
         """Sync a source directory to destination using rsync."""
         try:
             source_path = Path(source)
@@ -138,7 +130,7 @@ class BackupEngine:
             dest_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Build and run rsync command
-            cmd = self._build_rsync_command(source, dest_path, logger)
+            cmd = self._build_rsync_command(source, dest_path, logger, profile)
             result = subprocess.run(cmd, capture_output=True, text=True)
 
             return self._process_rsync_result(result, source, logger)
@@ -147,18 +139,18 @@ class BackupEngine:
             logger.error(f"Error syncing {source}: {str(e)}")
             return False
 
-    def _build_rsync_command(self, source: str, dest_path: Path, logger: logging.Logger) -> list:
-        """Build the rsync command with appropriate options."""
+    def _build_rsync_command(self, source: str, dest_path: Path, logger: logging.Logger, profile: BackupProfile) -> list:
+        """Build rsync command with appropriate options."""
         cmd = [
             'rsync',
-            '-av',  # archive mode, verbose
-            '--delete',  # delete files that don't exist in source
+            '-av',
             '--progress',
-            f"{source}/",  # trailing slash important for rsync
+            '--delete',
+            str(source),
             str(dest_path)
         ]
 
-        if self.profile.dry_run:
+        if profile.dry_run:
             cmd.append('--dry-run')
             logger.info("DRY RUN MODE - No files will actually be copied")
 
@@ -194,30 +186,38 @@ class BackupEngine:
                 if line.strip():
                     logger.info(f"  {line}")
 
-    def run_backup(self) -> bool:
+    def run_backup(self, profile: BackupProfile = None) -> bool:
         """Execute the complete backup process for all destinations."""
+        if profile is None:
+            profile = self.profile
+
+        if not profile:
+            print("No profile provided")
+            return False
+
         success = True
 
         # Validate profile
-        errors = self.config_manager.validate_profile(self.profile)
+        config_manager = BackupConfigManager()
+        errors = config_manager.validate_profile(profile)
         if errors:
             print("Profile validation failed:")
             for error in errors:
                 print(f"  - {error}")
             return False
 
-        print(f"Starting backup for profile: {self.profile.name}")
+        print(f"Starting backup for profile: {profile.name}")
 
         # Process each destination using the single-destination method
-        for dest_idx, destination in enumerate(self.profile.destinations):
+        for dest_idx, destination in enumerate(profile.destinations):
             if not destination.enabled:
                 print(f"Skipping disabled destination {dest_idx + 1}")
                 continue
 
             print(f"\nProcessing destination {dest_idx + 1}: {destination.target_path}")
 
-            # Use the single-destination backup method
-            dest_success, message = self.run_backup_to_destination(destination)
+            # Use the single-destination backup method with the profile
+            dest_success, message = self.run_backup_to_destination(destination, profile)
 
             if dest_success:
                 print(f"✓ {message}")
@@ -236,7 +236,7 @@ class BackupEngine:
 
         return success
 
-    def run_backup_to_destination(self, destination: BackupDestination) -> Tuple[bool, str]:
+    def run_backup_to_destination(self, destination: BackupDestination, profile: BackupProfile = None) -> Tuple[bool, str]:
         """
         Run backup to a specific destination.
 
@@ -247,6 +247,13 @@ class BackupEngine:
             Tuple of (success, message)
         """
         try:
+            # Use the provided profile or fallback to instance profile
+            if profile is None:
+                profile = self.profile
+
+            if not profile:
+                return False, "No profile provided"
+
             # Pre-flight checks
             if not destination.enabled:
                 return False, "Destination is disabled"
@@ -258,10 +265,10 @@ class BackupEngine:
 
             # Setup logging and execute backup
             logger = self.setup_logging(destination.target_path)
-            self._log_backup_start(logger, destination)
+            self._log_backup_start(logger, destination, profile)
 
             # Execute backup workflow
-            return self._execute_backup_workflow(destination, logger)
+            return self._execute_backup_workflow(destination, logger, profile)
 
         except (OSError, subprocess.SubprocessError, PermissionError, KeyboardInterrupt) as e:
             return self._handle_backup_error(e)
@@ -283,25 +290,27 @@ class BackupEngine:
         except (OSError, PermissionError) as e:
             return False, f"Failed to create target directory: {str(e)}"
 
-    def _log_backup_start(self, logger: logging.Logger, destination: BackupDestination) -> None:
+    def _log_backup_start(self, logger: logging.Logger, destination: BackupDestination, profile: BackupProfile) -> None:
         """Log backup start information."""
         logger.info(f"Starting backup to {destination.target_path}")
-        logger.info(f"Profile: {self.profile.name}")
-        logger.info(f"Sources: {len(self.profile.sources)} directories")
+        logger.info(f"Profile: {profile.name}")
+        logger.info(f"Sources: {len(profile.sources)} directories")
 
-    def _execute_backup_workflow(self, destination: BackupDestination, logger: logging.Logger) -> Tuple[bool, str]:
+    def _execute_backup_workflow(self, destination: BackupDestination,
+                                 logger: logging.Logger,
+                                 profile: BackupProfile) -> Tuple[bool, str]:
         """Execute the complete backup workflow."""
         # Run pre-backup commands
-        if not self.run_custom_commands(self.profile.pre_commands, "pre-backup", logger):
+        if not self.run_custom_commands(profile.pre_commands, "pre-backup", logger):
             logger.error("Pre-backup commands failed")
             return False, "Pre-backup commands failed"
 
         # Backup each source
-        success, failed_sources = self._backup_all_sources(destination, logger)
+        success, failed_sources = self._backup_all_sources(destination, logger, profile)
 
         # Run post-backup commands only if sources succeeded
         if success:
-            if not self.run_custom_commands(self.profile.post_commands, "post-backup", logger):
+            if not self.run_custom_commands(profile.post_commands, "post-backup", logger):
                 logger.error("Post-backup commands failed")
                 return False, "Post-backup commands failed"
 
@@ -311,16 +320,18 @@ class BackupEngine:
             logger.error(f"Backup failed for sources: {', '.join(failed_sources)}")
             return False, f"Failed to backup sources: {', '.join(failed_sources)}"
 
-    def _backup_all_sources(self, destination: BackupDestination, logger: logging.Logger) -> Tuple[bool, list]:
+    def _backup_all_sources(self, destination: BackupDestination,
+                            logger: logging.Logger,
+                            profile: BackupProfile) -> Tuple[bool, list]:
         """Backup all enabled sources to destination."""
         failed_sources = []
 
-        for source in self.profile.sources:
+        for source in profile.sources:
             if not source.enabled:
                 logger.info(f"Skipping disabled source: {source.path}")
                 continue
 
-            if not self.sync_directory(source.path, destination.target_path, logger):
+            if not self.sync_directory(source.path, destination.target_path, logger, profile):
                 failed_sources.append(source.path)
 
         success = len(failed_sources) == 0

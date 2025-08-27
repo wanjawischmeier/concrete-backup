@@ -8,14 +8,15 @@ from PyQt5.QtWidgets import (
     QTextEdit, QProgressBar, QMessageBox
 )
 from gui.workers.backup_worker import BackupWorker
+from backup_config import BackupProfile
 
 
 class BackupProgressDialog(QDialog):
     """Dialog showing backup progress."""
 
-    def __init__(self, profile_name: str, parent=None):
+    def __init__(self, profile: BackupProfile, parent=None):
         super().__init__(parent)
-        self.profile_name = profile_name
+        self.profile = profile
         self.worker = None
         self.backup_successful = False
         self.setup_ui()
@@ -55,15 +56,24 @@ class BackupProgressDialog(QDialog):
 
     def start_backup(self):
         """Start the backup process."""
-        self.worker = BackupWorker(self.profile_name)
+        self.worker = BackupWorker(self.profile)
 
         # Connect signals
         self.worker.progress.connect(self.on_progress)
         self.worker.error.connect(self.on_error)
         self.worker.finished.connect(self.on_finished)
+        self.worker.log_message.connect(self.on_log_message)  # Connect new signal
 
         # Start the worker
         self.worker.start()
+
+    def on_log_message(self, message: str):
+        """Handle detailed log messages from the backup engine."""
+        self.log_text.append(message)
+
+        # Scroll to bottom
+        scrollbar = self.log_text.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
     def on_progress(self, message: str):
         """Handle progress updates."""
@@ -85,28 +95,12 @@ class BackupProgressDialog(QDialog):
     def on_finished(self, success: bool, final_message: str):
         """Handle backup completion."""
         self.backup_successful = success
-
-        if success:
-            self.status_label.setText("Backup completed successfully!")
-            self.progress_bar.setRange(0, 1)
-            self.progress_bar.setValue(1)
-        else:
-            self.status_label.setText("Backup completed with errors")
-            self.progress_bar.setRange(0, 1)
-            self.progress_bar.setValue(0)
-
-        self.log_text.append(f"\n[FINAL] {final_message}")
+        self.status_label.setText(final_message)
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(int(success))
 
         # Enable close button
         self.close_button.setEnabled(True)
-
-        # Show summary dialog
-        if success:
-            QMessageBox.information(self, "Backup Complete",
-                                    "Backup completed successfully!\n\nSee log for details.")
-        else:
-            QMessageBox.warning(self, "Backup Errors",
-                                "Backup completed with errors.\n\nPlease check the log for details.")
 
     def closeEvent(self, event):
         """Handle dialog close event."""

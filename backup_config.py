@@ -4,7 +4,6 @@ Backup Configuration Management
 Handles loading, saving, and validation of backup configurations.
 """
 
-import json
 import yaml
 import os
 from typing import List, Dict, Optional, Any
@@ -91,17 +90,8 @@ class BackupProfile:
 class BackupConfigManager:
     """Manages backup configurations and profiles."""
 
-    def __init__(self, config_dir: str = None):
+    def __init__(self):
         """Initialize the config manager."""
-        if config_dir is None:
-            config_dir = os.path.expanduser("~/.config/concrete-backup")
-
-        self.config_dir = Path(config_dir)
-        self.config_dir.mkdir(parents=True, exist_ok=True)
-
-        self.profiles_dir = self.config_dir / "profiles"
-        self.profiles_dir.mkdir(exist_ok=True)
-
         self.current_profile: Optional[BackupProfile] = None
 
     def create_profile(self, name: str) -> BackupProfile:
@@ -122,83 +112,47 @@ class BackupConfigManager:
         self.current_profile = profile
         return profile
 
-    def save_profile(self, profile: BackupProfile, format: str = "yaml") -> bool:
-        """Save a backup profile to disk."""
+    def save_profile(self, profile: BackupProfile, filepath: str) -> bool:
+        """Save a backup profile to a YAML file."""
         try:
             from datetime import datetime
             profile.modified_at = datetime.now().isoformat()
 
-            filename = f"{profile.name}.{format}"
-            filepath = self.profiles_dir / filename
+            filepath_obj = Path(filepath)
+
+            # Create directory if it doesn't exist
+            filepath_obj.parent.mkdir(parents=True, exist_ok=True)
 
             # Convert dataclass to dict
             profile_dict = self._profile_to_dict(profile)
 
-            if format.lower() == "json":
-                with open(filepath, 'w') as f:
-                    json.dump(profile_dict, f, indent=2)
-            elif format.lower() in ["yaml", "yml"]:
-                with open(filepath, 'w') as f:
-                    yaml.dump(profile_dict, f, default_flow_style=False, indent=2)
-            else:
-                raise ValueError(f"Unsupported format: {format}")
+            # Always save as YAML
+            with open(filepath_obj, 'w') as f:
+                yaml.dump(profile_dict, f, default_flow_style=False, indent=2)
 
             return True
 
-        except (OSError, PermissionError, yaml.YAMLError, json.JSONEncodeError) as e:
+        except (OSError, PermissionError, yaml.YAMLError) as e:
             print(f"Error saving profile: {e}")
             return False
 
-    def load_profile(self, name: str) -> Optional[BackupProfile]:
-        """Load a backup profile from disk."""
+    def load_profile_from_file(self, filepath: str) -> Optional[BackupProfile]:
+        """Load a backup profile from a YAML file."""
         try:
-            # Try both yaml and json extensions
-            for ext in ["yaml", "yml", "json"]:
-                filepath = self.profiles_dir / f"{name}.{ext}"
-                if filepath.exists():
-                    with open(filepath, 'r') as f:
-                        if ext == "json":
-                            profile_dict = json.load(f)
-                        else:
-                            profile_dict = yaml.safe_load(f)
+            filepath_obj = Path(filepath)
+            if not filepath_obj.exists():
+                return None
 
-                    profile = self._dict_to_profile(profile_dict)
-                    self.current_profile = profile
-                    return profile
+            with open(filepath_obj, 'r') as f:
+                profile_dict = yaml.safe_load(f)
 
-            return None
+            profile = self._dict_to_profile(profile_dict)
+            self.current_profile = profile
+            return profile
 
-        except (OSError, PermissionError, FileNotFoundError, yaml.YAMLError, json.JSONDecodeError) as e:
+        except (OSError, PermissionError, FileNotFoundError, yaml.YAMLError) as e:
             print(f"Error loading profile: {e}")
             return None
-
-    def list_profiles(self) -> List[str]:
-        """List all available profile names."""
-        profiles = []
-        for file in self.profiles_dir.glob("*.yaml"):
-            profiles.append(file.stem)
-        for file in self.profiles_dir.glob("*.yml"):
-            if file.stem not in profiles:
-                profiles.append(file.stem)
-        for file in self.profiles_dir.glob("*.json"):
-            if file.stem not in profiles:
-                profiles.append(file.stem)
-
-        return sorted(profiles)
-
-    def delete_profile(self, name: str) -> bool:
-        """Delete a profile from disk."""
-        try:
-            for ext in ["yaml", "yml", "json"]:
-                filepath = self.profiles_dir / f"{name}.{ext}"
-                if filepath.exists():
-                    filepath.unlink()
-                    return True
-            return False
-
-        except (OSError, PermissionError) as e:
-            print(f"Error deleting profile: {e}")
-            return False
 
     def validate_profile(self, profile: BackupProfile) -> List[str]:
         """Validate a backup profile and return list of errors."""
@@ -267,18 +221,43 @@ class BackupConfigManager:
 
     def _profile_to_dict(self, profile: BackupProfile) -> Dict[str, Any]:
         """Convert profile dataclass to dictionary."""
-        return {
-            "name": profile.name,
-            "sources": [asdict(source) for source in profile.sources],
-            "destinations": [asdict(dest) for dest in profile.destinations],
-            "pre_commands": [asdict(cmd) for cmd in profile.pre_commands],
-            "post_commands": [asdict(cmd) for cmd in profile.post_commands],
-            "schedule": asdict(profile.schedule),
-            "log_enabled": profile.log_enabled,
-            "dry_run": profile.dry_run,
-            "created_at": profile.created_at,
-            "modified_at": profile.modified_at
-        }
+        try:
+            # Convert sources to dict
+            sources_list = [asdict(source) for source in profile.sources or []]
+
+            # Convert destinations to dict
+            destinations_list = [asdict(dest) for dest in profile.destinations or []]
+
+            # Convert pre_commands to dict
+            pre_commands_list = [asdict(cmd) for cmd in profile.pre_commands or []]
+
+            # Convert post_commands to dict
+            post_commands_list = [asdict(cmd) for cmd in profile.post_commands or []]
+
+            # Convert schedule to dict
+            schedule_dict = asdict(profile.schedule) if profile.schedule else asdict(ScheduleConfig())
+
+            return {
+                "name": profile.name,
+                "sources": sources_list,
+                "destinations": destinations_list,
+                "pre_commands": pre_commands_list,
+                "post_commands": post_commands_list,
+                "schedule": schedule_dict,
+                "log_enabled": profile.log_enabled,
+                "dry_run": profile.dry_run,
+                "created_at": profile.created_at,
+                "modified_at": profile.modified_at
+            }
+        except Exception as e:
+            print(f"Error in _profile_to_dict: {e}")
+            print(f"Profile name: {profile.name}")
+            print(f"Sources: {profile.sources}")
+            print(f"Destinations: {profile.destinations}")
+            print(f"Pre-commands: {profile.pre_commands}")
+            print(f"Post-commands: {profile.post_commands}")
+            print(f"Schedule: {profile.schedule}")
+            raise
 
     def _dict_to_profile(self, data: Dict[str, Any]) -> BackupProfile:
         """Convert dictionary to profile dataclass."""

@@ -74,12 +74,20 @@ class DestinationsTab(QWidget):
             self.parent_widget.current_profile.destinations.append(destination)
             self.load_from_profile(self.parent_widget.current_profile)
 
+            # Mark profile as dirty
+            if hasattr(self.parent_widget, 'mark_profile_dirty'):
+                self.parent_widget.mark_profile_dirty()
+
     def remove_destination(self):
         """Remove selected destination."""
         dest = self.destinations_list.get_selected_item_data()
         if dest and self.parent_widget.current_profile:
             self.parent_widget.current_profile.destinations.remove(dest)
             self.load_from_profile(self.parent_widget.current_profile)
+
+            # Mark profile as dirty
+            if hasattr(self.parent_widget, 'mark_profile_dirty'):
+                self.parent_widget.mark_profile_dirty()
 
     def load_from_profile(self, profile: BackupProfile):
         """Load destinations from profile."""

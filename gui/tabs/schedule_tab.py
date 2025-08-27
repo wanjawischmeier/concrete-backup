@@ -69,6 +69,21 @@ class ScheduleTab(QWidget):
         status_layout = QVBoxLayout(status_group)
 
         self.cron_status_label = QLabel("No backup scheduled")
+        self.cron_status_label.setWordWrap(True)
+        self.cron_status_label.setMinimumHeight(60)  # Reserve space for multiple lines
+        self.cron_status_label.setMaximumHeight(80)  # Limit height to prevent resizing
+        # Keep current size policy
+        h_policy = self.cron_status_label.sizePolicy().horizontalPolicy()
+        v_policy = self.cron_status_label.sizePolicy().verticalPolicy()
+        self.cron_status_label.setSizePolicy(h_policy, v_policy)
+        self.cron_status_label.setStyleSheet("""
+            QLabel {
+                padding: 8px;
+                background-color: #f5f5f5;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+        """)
         status_layout.addWidget(self.cron_status_label)
 
         layout.addWidget(status_group)
@@ -77,6 +92,11 @@ class ScheduleTab(QWidget):
 
     def on_schedule_changed(self):
         """Called when schedule time or days change."""
+        # Update the profile with current settings FIRST if we have one
+        if (hasattr(self.parent_widget, 'current_profile')
+                and self.parent_widget.current_profile):
+            self.save_to_profile(self.parent_widget.current_profile)
+
         # Update the cron status to reflect changes
         self.update_cron_status()
 
@@ -84,10 +104,9 @@ class ScheduleTab(QWidget):
         if hasattr(self.parent_widget, 'update_schedule_status'):
             self.parent_widget.update_schedule_status()
 
-        # Update the profile with current settings if we have one
-        if (hasattr(self.parent_widget, 'current_profile') and
-                self.parent_widget.current_profile):
-            self.save_to_profile(self.parent_widget.current_profile)
+        # Mark profile as dirty
+        if hasattr(self.parent_widget, 'mark_profile_dirty'):
+            self.parent_widget.mark_profile_dirty()
 
     def toggle_daily_backup(self, state):
         """Toggle between daily and custom day selection."""
@@ -119,6 +138,10 @@ class ScheduleTab(QWidget):
 
         self.update_cron_status()
 
+        # Also notify the main view to update its schedule status
+        if hasattr(self.parent_widget, 'update_schedule_status'):
+            self.parent_widget.update_schedule_status()
+
     def save_to_profile(self, profile: BackupProfile):
         """Save schedule to profile."""
         time = self.schedule_time.time()
@@ -134,9 +157,9 @@ class ScheduleTab(QWidget):
 
     def update_cron_status(self):
         """Update the cron status display."""
-        if (not self.parent_widget or
-                not hasattr(self.parent_widget, 'current_profile') or
-                not self.parent_widget.current_profile):
+        if (not self.parent_widget
+                or not hasattr(self.parent_widget, 'current_profile')
+                or not self.parent_widget.current_profile):
             self.cron_status_label.setText("No profile loaded")
             return
 
@@ -145,28 +168,36 @@ class ScheduleTab(QWidget):
             self.cron_status_label.setText("Schedule disabled")
             return
 
-        # Get current schedule info
-        time = self.schedule_time.time()
-        hour, minute = time.hour(), time.minute()
-
-        if self.daily_cb.isChecked():
-            days_text = "daily"
-        else:
-            selected_days = []
-            day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            for i, cb in enumerate(self.day_checkboxes):
-                if cb.isChecked():
-                    selected_days.append(day_names[i])
-            days_text = ", ".join(selected_days) if selected_days else "no days"
-
-        # Format time
+        # Get current schedule info from profile (not UI state)
+        schedule = self.parent_widget.current_profile.schedule
+        hour, minute = schedule.hour, schedule.minute
         time_str = f"{hour:02d}:{minute:02d}"
 
-        self.cron_status_label.setText(f"Scheduled: {time_str} {days_text}")
-
-        # Also check actual cron job status
-        root_job = self.cron_manager.get_backup_job_status(use_root=True)
-        if root_job:
-            self.cron_status_label.setText(f"Active: {time_str} {days_text} (cron: {root_job})")
+        # Use the same logic as the main view for determining "Daily"
+        days_of_week = schedule.days_of_week
+        if len(days_of_week) == 7 and set(days_of_week) == set(range(7)):
+            days_text = "Daily"
+        elif len(days_of_week) == 0:
+            days_text = "No days selected"
         else:
-            self.cron_status_label.setText(f"Configured: {time_str} {days_text} (not in cron yet)")
+            day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            selected_days = [day_names[i] for i in sorted(days_of_week) if i < len(day_names)]
+            days_text = ", ".join(selected_days)
+
+        # Check actual cron job status
+        root_job = self.cron_manager.get_backup_job_status()
+
+        # Format as multiple lines
+        status_lines = [
+            f"⏰ Time: {time_str}",
+            f"📅 Days: {days_text}"
+        ]
+
+        if root_job:
+            status_lines.append("✅ Status: Active in cron")
+            status_lines.append(f"🔧 Cron: {root_job}")
+        else:
+            status_lines.append("⚠️ Status: Configured but not in cron yet")
+
+        # Join with line breaks and set text
+        self.cron_status_label.setText("\n".join(status_lines))

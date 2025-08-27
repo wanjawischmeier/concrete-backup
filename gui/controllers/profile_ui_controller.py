@@ -28,6 +28,9 @@ class ProfileUIController:
         # UI tabs that need to be notified of profile changes
         self.tabs = []
 
+        # Track if profile has unsaved changes
+        self.is_dirty = False
+
     def register_tabs(self, sources_tab, destinations_tab, schedule_tab, custom_commands_tab):
         """Register the tabs that need profile updates."""
         self.tabs = [sources_tab, destinations_tab, schedule_tab, custom_commands_tab]
@@ -47,6 +50,7 @@ class ProfileUIController:
         if self.profile_manager.create_new_profile():
             self.load_profile_to_ui()
             self.update_profile_display()
+            self.mark_clean()  # New profile starts clean
             return True
         return False
 
@@ -57,6 +61,7 @@ class ProfileUIController:
 
         if self.profile_manager.save_current_profile():
             self.update_profile_display()
+            self.mark_clean()  # Clear dirty state after successful save
             return True
         return False
 
@@ -67,6 +72,7 @@ class ProfileUIController:
 
         if self.profile_manager.save_profile_as():
             self.update_profile_display()
+            self.mark_clean()  # Clear dirty state after successful save
             return True
         return False
 
@@ -75,6 +81,7 @@ class ProfileUIController:
         if self.profile_manager.open_profile_file():
             self.load_profile_to_ui()
             self.update_profile_display()
+            self.mark_clean()  # Clear dirty state when loading a profile
             return True
         return False
 
@@ -105,13 +112,28 @@ class ProfileUIController:
         # Update the profile manager's profile
         self.profile_manager.set_profile(self.current_profile)
 
+    def _truncate_text(self, text: str, max_length: int = 45) -> str:
+        """Truncate text if it's too long, adding '...' at the end."""
+        if len(text) <= max_length:
+            return text
+        return text[:max_length - 3] + "..."
+
     def update_profile_display(self):
         """Update the profile display information."""
         if self.current_profile:
             display_name = self.current_profile.name
             if self.current_profile_path:
-                display_name += f" ({Path(self.current_profile_path).name})"
+                filename = Path(self.current_profile_path).name
+                # Add * after filename if profile has unsaved changes
+                if self.is_dirty:
+                    filename = f"{filename}*"
+                display_name += f" ({filename})"
+            elif self.is_dirty:
+                # If no file path but dirty, show * after name
+                display_name += "*"
 
+            # Truncate the display name if it's too long
+            display_name = self._truncate_text(display_name)
             self.profile_name_label.setText(display_name)
         else:
             self.profile_name_label.setText("No profile loaded")
@@ -143,3 +165,23 @@ class ProfileUIController:
     def has_profile(self) -> bool:
         """Check if there is a current profile."""
         return self.profile_manager.has_profile()
+
+    def mark_dirty(self):
+        """Mark the profile as having unsaved changes."""
+        if not self.is_dirty:
+            self.is_dirty = True
+            self.update_profile_display()
+
+    def mark_clean(self):
+        """Mark the profile as saved (no unsaved changes)."""
+        if self.is_dirty:
+            self.is_dirty = False
+            self.update_profile_display()
+
+    def is_profile_dirty(self) -> bool:
+        """Check if profile has unsaved changes."""
+        return self.is_dirty
+
+    def get_dirty_state(self) -> bool:
+        """Get the current dirty state (alias for is_profile_dirty)."""
+        return self.is_dirty

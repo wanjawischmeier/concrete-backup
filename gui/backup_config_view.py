@@ -20,7 +20,6 @@ from gui.tabs.custom_commands_tab import CustomCommandsTab
 from gui.controllers.profile_ui_controller import ProfileUIController
 from gui.controllers.schedule_ui_controller import ScheduleUIController
 from gui.dialogs.backup_progress_dialog import BackupProgressDialog
-from gui.workers.backup_worker import BackupWorker
 
 
 class BackupConfigView(QWidget):
@@ -52,41 +51,64 @@ class BackupConfigView(QWidget):
         self.setup_ui()
         self.setup_controllers()
 
+    def _truncate_text(self, text: str, max_length: int = 40) -> str:
+        """Truncate text if it's too long, adding '...' at the end."""
+        if len(text) <= max_length:
+            return text
+        return text[:max_length - 3] + "..."
+
     def setup_ui(self):
         """Setup the user interface."""
         layout = QVBoxLayout(self)
 
         # Profile info section
-        profile_info_group = QGroupBox("Current Profile")
-        profile_info_layout = QHBoxLayout(profile_info_group)
+        self.profile_info_group = QGroupBox("")
+        # Set a gray border by default
+        self.profile_info_group.setStyleSheet("QGroupBox { border: 2px solid #CCCCCC; }")
+        profile_info_layout = QVBoxLayout(self.profile_info_group)
 
+        # Profile name and status
+        name_status_layout = QHBoxLayout()
+
+        profile_name_container = QVBoxLayout()
         self.profile_name_label = QLabel("No profile loaded")
         self.profile_name_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        profile_info_layout.addWidget(self.profile_name_label)
+        self.profile_name_label.setWordWrap(False)
+        profile_name_container.addWidget(self.profile_name_label)
 
-        profile_info_layout.addStretch()
+        self.schedule_mode_label = QLabel("Manual Mode")
+        self.schedule_mode_label.setStyleSheet("font-size: 11px; color: #666;")
+        self.schedule_mode_label.setWordWrap(False)
+        profile_name_container.addWidget(self.schedule_mode_label)
+
+        name_status_layout.addLayout(profile_name_container)
+        name_status_layout.addStretch()
 
         # Profile buttons
+        buttons_layout = QHBoxLayout()
         new_btn = QPushButton("New")
         new_btn.clicked.connect(self.create_new_profile)
-        profile_info_layout.addWidget(new_btn)
+        buttons_layout.addWidget(new_btn)
 
         open_btn = QPushButton("Open")
         open_btn.clicked.connect(self.open_profile_file)
-        profile_info_layout.addWidget(open_btn)
+        buttons_layout.addWidget(open_btn)
 
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self.save_current_profile)
-        profile_info_layout.addWidget(save_btn)
+        buttons_layout.addWidget(save_btn)
 
         save_as_btn = QPushButton("Save As")
         save_as_btn.clicked.connect(self.save_profile_as)
-        profile_info_layout.addWidget(save_as_btn)
+        buttons_layout.addWidget(save_as_btn)
 
         self.profile_status_label = QLabel("")
-        profile_info_layout.addWidget(self.profile_status_label)
+        buttons_layout.addWidget(self.profile_status_label)
 
-        layout.addWidget(profile_info_group)
+        name_status_layout.addLayout(buttons_layout)
+        profile_info_layout.addLayout(name_status_layout)
+
+        layout.addWidget(self.profile_info_group)
 
         # Main tabs
         self.tabs = QTabWidget()
@@ -104,44 +126,110 @@ class BackupConfigView(QWidget):
         layout.addWidget(self.tabs)
 
         # Configuration and actions section
-        status_group = QGroupBox("Backup Configuration & Actions")
-        status_layout = QVBoxLayout(status_group)
+        self.status_group = QGroupBox("")
+        status_layout = QVBoxLayout(self.status_group)
 
         # Options
         options_layout = QHBoxLayout()
         self.dry_run_cb = QCheckBox("Dry Run (don't actually copy files)")
+        self.dry_run_cb.stateChanged.connect(self.on_profile_changed)
         options_layout.addWidget(self.dry_run_cb)
 
         self.log_enabled_cb = QCheckBox("Enable detailed logging")
+        self.log_enabled_cb.stateChanged.connect(self.on_profile_changed)
         options_layout.addWidget(self.log_enabled_cb)
+        options_layout.addStretch()
         status_layout.addLayout(options_layout)
 
-        # Schedule status
-        schedule_status_layout = QHBoxLayout()
-        self.schedule_status_label = QLabel("Schedule: Not configured")
-        schedule_status_layout.addWidget(self.schedule_status_label)
-        schedule_status_layout.addStretch()
-        status_layout.addLayout(schedule_status_layout)
+        # Actions
+        actions_layout = QHBoxLayout()
 
-        # Schedule and backup controls
-        schedule_control_layout = QHBoxLayout()
-        self.schedule_enabled_cb = QCheckBox("Enable Scheduled Backup")
-        schedule_control_layout.addWidget(self.schedule_enabled_cb)
+        # Schedule toggle button
+        self.schedule_toggle_btn = QPushButton("Enable Scheduling")
+        self.schedule_toggle_btn.setCheckable(True)
+        self.schedule_toggle_btn.clicked.connect(self.toggle_schedule_button)
+        self.update_schedule_button_style()
+        actions_layout.addWidget(self.schedule_toggle_btn)
+
+        actions_layout.addStretch()
 
         self.run_now_btn = QPushButton("Run Backup Now")
         self.run_now_btn.clicked.connect(self.run_backup_now)
-        schedule_control_layout.addWidget(self.run_now_btn)
+        self.run_now_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border: 2px solid #45a049;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        actions_layout.addWidget(self.run_now_btn)
 
-        status_layout.addLayout(schedule_control_layout)
-        layout.addWidget(status_group)
+        status_layout.addLayout(actions_layout)
+        layout.addWidget(self.status_group)
+
+        # Initialize UI state (everything disabled until profile loaded)
+        self.update_ui_state()
+
+    def validate_profile_for_backup(self) -> bool:
+        """
+        Validate that the current profile has at least one source and one destination.
+        Shows a message box and returns False if validation fails.
+        """
+        if not self.current_profile:
+            QMessageBox.warning(self, "No Profile", "No profile loaded. Please create or open a profile first.")
+            return False
+
+        if not self.current_profile.sources:
+            QMessageBox.warning(self, "No Sources", "No backup sources defined. Please add at least one source directory.")
+            return False
+
+        if not self.current_profile.destinations:
+            QMessageBox.warning(
+                self, "No Destinations",
+                "No backup destinations defined. Please add at least one destination."
+            )
+            return False
+
+        return True
+
+    def update_ui_state(self):
+        """Update the enabled/disabled state of UI elements based on profile status."""
+        has_profile = self.current_profile is not None
+
+        # Enable/disable tabs
+        self.tabs.setEnabled(has_profile)
+
+        # Enable/disable bottom section
+        self.dry_run_cb.setEnabled(has_profile)
+        self.log_enabled_cb.setEnabled(has_profile)
+        self.schedule_toggle_btn.setEnabled(has_profile)
+        self.run_now_btn.setEnabled(has_profile)
+
+        # Apply visual styling for disabled state
+        if has_profile:
+            self.tabs.setStyleSheet("")
+            self.status_group.setStyleSheet("")
+        else:
+            self.tabs.setStyleSheet("QTabWidget { color: #999999; }")
+            self.status_group.setStyleSheet("QGroupBox { color: #999999; }")
 
     def setup_controllers(self):
         """Initialize controllers after UI is set up."""
         self.profile_controller = ProfileUIController(
             self, self.profile_name_label, self.profile_status_label
         )
+
+        # Schedule controller - create dummy widgets since we use a button now
+        dummy_label = QLabel()  # Not used anymore
+        dummy_checkbox = QCheckBox()  # Not used anymore
         self.schedule_controller = ScheduleUIController(
-            self, self.schedule_status_label, self.schedule_enabled_cb
+            self, dummy_label, dummy_checkbox
         )
 
         # Register tabs with profile controller
@@ -149,9 +237,6 @@ class BackupConfigView(QWidget):
             self.sources_tab, self.destinations_tab,
             self.schedule_tab, self.custom_commands_tab
         )
-
-        # Connect schedule toggle
-        self.schedule_enabled_cb.stateChanged.connect(self.toggle_schedule)
 
     @property
     def current_profile(self) -> Optional[BackupProfile]:
@@ -193,6 +278,31 @@ class BackupConfigView(QWidget):
             self.log_enabled_cb.setChecked(self.current_profile.log_enabled)
             self.schedule_controller.load_schedule_from_profile(self.current_profile)
 
+        # Update schedule status display
+        self.update_schedule_status()
+
+        # Update UI state (enable/disable elements)
+        self.update_ui_state()
+
+        # Mark as clean after loading (important: do this after all UI updates)
+        if self.profile_controller:
+            self.profile_controller.mark_clean()
+
+    def on_profile_changed(self):
+        """Called when any profile setting is changed."""
+        if self.profile_controller and self.current_profile:
+            self.profile_controller.mark_dirty()
+
+    def mark_profile_dirty(self):
+        """Public method for tabs to mark profile as dirty."""
+        self.on_profile_changed()
+
+    def has_unsaved_changes(self) -> bool:
+        """Check if the current profile has unsaved changes."""
+        if self.profile_controller:
+            return self.profile_controller.is_profile_dirty()
+        return False
+
     def toggle_schedule(self, state):
         """Toggle schedule enabled/disabled."""
         if not self.current_profile:
@@ -210,28 +320,129 @@ class BackupConfigView(QWidget):
             # Save the profile first, then try again
             if self.save_current_profile():
                 self.toggle_schedule(state)
+        else:
+            # Update the schedule tab's status display
+            self.schedule_tab.update_cron_status()
+            # Update the main view status as well
+            self.update_schedule_status()
+
+    def update_schedule_button_style(self):
+        """Update the schedule button appearance based on state."""
+        if not self.current_profile:
+            enabled = False
+        else:
+            enabled = self.current_profile.schedule.enabled
+
+        if enabled:
+            self.schedule_toggle_btn.setText("Disable Scheduling")
+            self.schedule_toggle_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #FF6B6B;
+                    color: white;
+                    font-weight: bold;
+                    padding: 8px 16px;
+                    border: 2px solid #FF5252;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #FF5252;
+                }
+            """)
+            self.schedule_toggle_btn.setChecked(True)
+        else:
+            self.schedule_toggle_btn.setText("Enable Scheduling")
+            self.schedule_toggle_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2196F3;
+                    color: white;
+                    font-weight: bold;
+                    padding: 8px 16px;
+                    border: 2px solid #1976D2;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #1976D2;
+                }
+            """)
+            self.schedule_toggle_btn.setChecked(False)
+
+    def toggle_schedule_button(self):
+        """Handle schedule button toggle."""
+        if not self.validate_profile_for_backup():
+            self.schedule_toggle_btn.setChecked(False)
+            self.update_schedule_button_style()
+            return
+
+        # Auto-save before enabling/disabling schedule
+        if self.profile_controller.is_profile_dirty():
+            if not self.save_current_profile():
+                # If save failed, revert button state
+                self.schedule_toggle_btn.setChecked(False)
+                self.update_schedule_button_style()
+                return
+            # Continue with the action after successful save
+
+        # Convert button state to checkbox state for compatibility
+        new_state = Qt.Checked if self.schedule_toggle_btn.isChecked() else Qt.Unchecked
+
+        # Call the existing toggle method
+        self.toggle_schedule(new_state)
+
+        # Update button appearance
+        self.update_schedule_button_style()
+
+    def update_schedule_status(self):
+        """Update the schedule status display in the main view."""
+        if not self.current_profile:
+            self.schedule_mode_label.setText("Manual Mode")
+            self.schedule_mode_label.setStyleSheet("font-size: 11px; color: #666;")
+            self.profile_info_group.setStyleSheet("QGroupBox { border: 2px solid #CCCCCC; }")
+        else:
+            if self.current_profile.schedule.enabled:
+                # Get schedule details for display
+                hour = self.current_profile.schedule.hour
+                minute = self.current_profile.schedule.minute
+                time_str = f"{hour:02d}:{minute:02d}"
+
+                days_of_week = self.current_profile.schedule.days_of_week
+                # Check if all 7 days are selected (Daily)
+                if len(days_of_week) == 7 and set(days_of_week) == set(range(7)):
+                    days_text = "Daily"
+                elif len(days_of_week) == 0:
+                    days_text = "Never"
+                else:
+                    day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    selected_days = [day_names[i] for i in sorted(days_of_week) if i < len(day_names)]
+                    days_text = ", ".join(selected_days)
+
+                schedule_text = f"Scheduled Mode - {time_str} {days_text}"
+                truncated_text = self._truncate_text(schedule_text)
+                self.schedule_mode_label.setText(truncated_text)
+                self.schedule_mode_label.setStyleSheet("font-size: 11px; color: #007ACC; font-weight: bold;")
+                self.profile_info_group.setStyleSheet("QGroupBox { border: 2px solid #007ACC; }")
+            else:
+                self.schedule_mode_label.setText("Manual Mode")
+                self.schedule_mode_label.setStyleSheet("font-size: 11px; color: #666;")
+                self.profile_info_group.setStyleSheet("QGroupBox { border: 2px solid #CCCCCC; }")
+
+        # Update the schedule button appearance
+        self.update_schedule_button_style()
 
     def run_backup_now(self):
         """Run backup immediately with progress dialog."""
-        if not self.current_profile:
-            QMessageBox.warning(self, "No Profile", "No profile loaded. Please create or open a profile first.")
+        if not self.validate_profile_for_backup():
             return
 
+        # Auto-save before running backup
+        if self.profile_controller.is_profile_dirty():
+            if not self.save_current_profile():
+                # If save failed, don't run backup
+                return
+            # Continue with backup after successful save
+
         try:
-            # Create progress dialog
-            progress_dialog = BackupProgressDialog(self)
-
-            # Create backup worker
-            backup_worker = BackupWorker(self.current_profile)
-
-            # Connect signals
-            backup_worker.progress_update.connect(progress_dialog.update_progress)
-            backup_worker.status_update.connect(progress_dialog.update_status)
-            backup_worker.finished.connect(progress_dialog.backup_finished)
-            backup_worker.error.connect(progress_dialog.backup_error)
-
-            # Start backup
-            progress_dialog.start_backup(backup_worker)
+            # Create and show progress dialog - pass the profile object directly
+            progress_dialog = BackupProgressDialog(self.current_profile, self)
             progress_dialog.exec_()
 
         except (ValueError, OSError, PermissionError) as e:

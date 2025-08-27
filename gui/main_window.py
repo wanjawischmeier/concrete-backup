@@ -15,7 +15,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Concrete Backup")
-        self.setGeometry(100, 100, 1000, 700)
+        self.setGeometry(100, 100, 700, 700)
 
         # Central widget
         self.backup_config = BackupConfigView()
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         self.create_menu_bar()
 
         # Status bar
-        self.statusBar().showMessage("Ready")
+        self.statusBar()
 
     def create_menu_bar(self):
         """Create the application menu bar."""
@@ -71,3 +71,29 @@ class MainWindow(QMainWindow):
         QMessageBox.about(self, "About Concrete Backup",
                           f"{version_info['full_name']}\n\n"
                           "A comprehensive backup management system for Ubuntu.")
+
+    def closeEvent(self, event):
+        """Handle window close event - check for unsaved changes."""
+        # Check if there are unsaved changes
+        if self.backup_config.has_unsaved_changes():
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes. Do you want to save before exiting?",
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                QMessageBox.Save
+            )
+
+            if reply == QMessageBox.Save:
+                # Try to save
+                if self.backup_config.save_current_profile():
+                    event.accept()  # Save successful, allow close
+                else:
+                    event.ignore()  # Save failed, don't close
+            elif reply == QMessageBox.Discard:
+                event.accept()  # Don't save, allow close
+            else:  # Cancel
+                event.ignore()  # Don't close
+        else:
+            # No unsaved changes, allow close
+            event.accept()

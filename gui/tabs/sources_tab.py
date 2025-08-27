@@ -70,12 +70,20 @@ class SourcesTab(QWidget):
             self.parent_widget.current_profile.sources.append(source)
             self.load_from_profile(self.parent_widget.current_profile)
 
+            # Mark profile as dirty
+            if hasattr(self.parent_widget, 'mark_profile_dirty'):
+                self.parent_widget.mark_profile_dirty()
+
     def remove_source_directory(self):
         """Remove selected source directory."""
         source = self.sources_list.get_selected_item_data()
         if source and self.parent_widget.current_profile:
             self.parent_widget.current_profile.sources.remove(source)
             self.load_from_profile(self.parent_widget.current_profile)
+
+            # Mark profile as dirty
+            if hasattr(self.parent_widget, 'mark_profile_dirty'):
+                self.parent_widget.mark_profile_dirty()
 
     def _get_drive_for_path(self, path: str) -> Optional[str]:
         """Get drive info for a given path."""

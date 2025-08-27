@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QGroupBox, QListWidget, QListWidgetItem, QInputDialog, QMessageBox
 )
 from PyQt5.QtCore import Qt
+from backup_config import CustomCommand
 
 
 class CommandListWidget(QWidget):
@@ -57,9 +58,14 @@ class CommandListWidget(QWidget):
         )
 
         if ok and command.strip():
+            # Create a CustomCommand object
+            custom_cmd = CustomCommand(command=command.strip(), description=command.strip())
             item = QListWidgetItem(command.strip())
-            item.setData(Qt.UserRole, command.strip())
+            item.setData(Qt.UserRole, custom_cmd)
             self.command_list.addItem(item)
+
+            # Notify parent of change
+            self._notify_parent_of_change()
 
     def edit_command(self):
         """Edit the selected command."""
@@ -68,7 +74,13 @@ class CommandListWidget(QWidget):
             QMessageBox.information(self, "No Selection", "Please select a command to edit.")
             return
 
-        current_command = current_item.data(Qt.UserRole)
+        current_cmd_obj = current_item.data(Qt.UserRole)
+        # Handle both CustomCommand objects and strings for backward compatibility
+        if isinstance(current_cmd_obj, CustomCommand):
+            current_command = current_cmd_obj.command
+        else:
+            current_command = str(current_cmd_obj)
+
         command, ok = QInputDialog.getText(
             self, "Edit Command",
             "Edit shell command:",
@@ -76,8 +88,13 @@ class CommandListWidget(QWidget):
         )
 
         if ok and command.strip():
+            # Create a new CustomCommand object
+            custom_cmd = CustomCommand(command=command.strip(), description=command.strip())
             current_item.setText(command.strip())
-            current_item.setData(Qt.UserRole, command.strip())
+            current_item.setData(Qt.UserRole, custom_cmd)
+
+            # Notify parent of change
+            self._notify_parent_of_change()
 
     def remove_command(self):
         """Remove the selected command."""
@@ -97,22 +114,39 @@ class CommandListWidget(QWidget):
             row = self.command_list.row(current_item)
             self.command_list.takeItem(row)
 
+            # Notify parent of change
+            self._notify_parent_of_change()
+
     def clear_commands(self):
         """Clear all commands from the list."""
         self.command_list.clear()
 
-    def add_command_item(self, command: str):
+    def add_command_item(self, command):
         """Add a command item to the list."""
-        item = QListWidgetItem(command)
-        item.setData(Qt.UserRole, command)
+        # Handle both CustomCommand objects and strings
+        if isinstance(command, CustomCommand):
+            item = QListWidgetItem(command.command)
+            item.setData(Qt.UserRole, command)
+        else:
+            # Convert string to CustomCommand for backward compatibility
+            custom_cmd = CustomCommand(command=str(command), description=str(command))
+            item = QListWidgetItem(str(command))
+            item.setData(Qt.UserRole, custom_cmd)
         self.command_list.addItem(item)
 
     def get_commands(self) -> list:
-        """Get all commands as a list."""
+        """Get all commands as a list of CustomCommand objects."""
         commands = []
         for i in range(self.command_list.count()):
             item = self.command_list.item(i)
-            commands.append(item.data(Qt.UserRole))
+            cmd_data = item.data(Qt.UserRole)
+            # Ensure we return CustomCommand objects
+            if isinstance(cmd_data, CustomCommand):
+                commands.append(cmd_data)
+            else:
+                # Convert string to CustomCommand for backward compatibility
+                custom_cmd = CustomCommand(command=str(cmd_data), description=str(cmd_data))
+                commands.append(custom_cmd)
         return commands
 
     def set_commands(self, commands: list):
@@ -120,3 +154,13 @@ class CommandListWidget(QWidget):
         self.clear_commands()
         for command in commands:
             self.add_command_item(command)
+
+    def _notify_parent_of_change(self):
+        """Notify parent widget that commands have changed."""
+        # Walk up the parent chain to find the tab, then the main view
+        parent = self.parent()
+        while parent:
+            if hasattr(parent, 'parent_widget') and hasattr(parent.parent_widget, 'mark_profile_dirty'):
+                parent.parent_widget.mark_profile_dirty()
+                break
+            parent = parent.parent()
