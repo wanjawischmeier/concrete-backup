@@ -1,0 +1,25 @@
+[flake8]
+exclude = 
+    .venv,
+    .git,
+    __pycache__,
+    *.egg-info,
+    .pytest_cache,
+    build,
+    dist,
+    .tox
+
+max-line-length = 127
+max-complexity = 10
+
+ignore = 
+    E203,  # whitespace before ':'
+    W503,  # line break before binary operator
+
+# Only check project files
+filename = 
+    *.py
+
+per-file-ignores =
+    # Allow unused imports in __init__.py files
+    __init__.py:F401
