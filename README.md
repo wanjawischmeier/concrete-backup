@@ -74,3 +74,6 @@ concrete-backup/
 - PyQt5: GUI framework
 - PyYAML: Configuration file parsing
 - psutil: System information
+
+## Credit
+Icon: <a href="https://www.flaticon.com/free-icons/firewall" title="firewall icons">Firewall icons created by juicy_fish - Flaticon</a>
