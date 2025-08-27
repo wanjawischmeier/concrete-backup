@@ -10,8 +10,25 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 
-# Create Debian package archive
+# Create release files directory
 mkdir -p release-files
-cp artifacts/concrete-backup_${VERSION}-1_amd64.deb release-files/
+
+# Copy all package formats if they exist
+if find artifacts/ -name "*.deb" -type f | head -1 > /dev/null 2>&1; then
+    echo "Copying Debian packages..."
+    cp artifacts/*.deb release-files/
+fi
+
+if find artifacts/ -name "*.rpm" -type f | head -1 > /dev/null 2>&1; then
+    echo "Copying RPM packages..."
+    cp artifacts/*.rpm release-files/
+fi
+
+if find artifacts/ -name "*.tar.gz" -type f | head -1 > /dev/null 2>&1; then
+    echo "Copying source archives..."
+    cp artifacts/*.tar.gz release-files/
+fi
 
 echo "Release archive created in release-files/"
+echo "Available packages:"
+ls -la release-files/
