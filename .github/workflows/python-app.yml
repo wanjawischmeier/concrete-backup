@@ -102,7 +102,7 @@ jobs:
     - name: Install system dependencies for packaging
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential
+        sudo apt-get install -y build-essential debhelper
 
     - name: Build executable with PyInstaller
       run: |
@@ -114,55 +114,260 @@ jobs:
           --hidden-import=yaml \
           --hidden-import=psutil \
           --add-data "gui:gui" \
-          --name concrete-backup-${{ steps.get-version.outputs.version }} \
+          --name concrete-backup-bin \
           backup_gui.py
 
-    - name: Test executable
+    - name: Create Debian package structure
       run: |
-        # Test that the executable was created and is executable
-        EXECUTABLE_NAME="concrete-backup-${{ steps.get-version.outputs.version }}"
-        if [ -f "dist/$EXECUTABLE_NAME" ] && [ -x "dist/$EXECUTABLE_NAME" ]; then
-          echo "✓ Executable created successfully and is executable"
-          ls -la "dist/$EXECUTABLE_NAME"
-          
-          # Test basic command line options
-          echo "Testing --help option..."
-          "./dist/$EXECUTABLE_NAME" --help
-          
-          echo "Testing --version option..."
-          "./dist/$EXECUTABLE_NAME" --version
-          
-          echo "Testing --headless-test option..."
-          "./dist/$EXECUTABLE_NAME" --headless-test
+        VERSION="${{ steps.get-version.outputs.version }}"
+        PACKAGE_NAME="concrete-backup"
+        DEB_DIR="debian-package"
+        
+        # Create directory structure
+        mkdir -p "$DEB_DIR/DEBIAN"
+        mkdir -p "$DEB_DIR/usr/bin"
+        mkdir -p "$DEB_DIR/usr/share/applications"
+        mkdir -p "$DEB_DIR/usr/share/pixmaps"
+        mkdir -p "$DEB_DIR/usr/share/doc/$PACKAGE_NAME"
+        mkdir -p "$DEB_DIR/opt/$PACKAGE_NAME"
+        
+        # Copy the PyInstaller executable
+        cp dist/concrete-backup-bin "$DEB_DIR/opt/$PACKAGE_NAME/concrete-backup-bin"
+        chmod +x "$DEB_DIR/opt/$PACKAGE_NAME/concrete-backup-bin"
+        
+        # Create wrapper script that handles privilege escalation
+        cat > "$DEB_DIR/usr/bin/$PACKAGE_NAME" << 'EOF'
+        #!/bin/bash
+        
+        # Concrete Backup - GUI Launcher with privilege escalation
+        EXECUTABLE="/opt/concrete-backup/concrete-backup-bin"
+        
+        # Check if we're running in a graphical environment
+        if [ -z "$DISPLAY" ]; then
+            echo "Error: This application requires a graphical environment."
+            echo "Please run from a desktop session."
+            exit 1
+        fi
+        
+        # Check if executable exists
+        if [ ! -f "$EXECUTABLE" ]; then
+            echo "Error: Concrete Backup executable not found at $EXECUTABLE"
+            exit 1
+        fi
+        
+        # Use pkexec for graphical privilege escalation
+        if command -v pkexec >/dev/null 2>&1; then
+            echo "Starting Concrete Backup with elevated privileges..."
+            exec pkexec env DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" "$EXECUTABLE" "$@"
         else
-          echo "✗ Executable not found or not executable"
+            echo "Error: pkexec not found. Please install policykit-1."
+            echo "Attempting to run without elevation..."
+            exec "$EXECUTABLE" "$@"
+        fi
+        EOF
+        
+        chmod +x "$DEB_DIR/usr/bin/$PACKAGE_NAME"
+        
+        # Create desktop entry
+        cat > "$DEB_DIR/usr/share/applications/$PACKAGE_NAME.desktop" << EOF
+        [Desktop Entry]
+        Version=1.0
+        Type=Application
+        Name=Concrete Backup
+        Comment=Advanced backup solution with scheduling and multiple destinations
+        Exec=concrete-backup
+        Icon=concrete-backup
+        Terminal=false
+        Categories=System;Utility;Archiving;
+        Keywords=backup;archive;sync;schedule;cron;
+        StartupNotify=true
+        EOF
+        
+        # Create a simple icon (you can replace this with a proper icon later)
+        cat > "$DEB_DIR/usr/share/pixmaps/$PACKAGE_NAME.xpm" << 'EOF'
+        /* XPM */
+        static char * concrete_backup_xpm[] = {
+        "32 32 3 1",
+        " 	c None",
+        ".	c #000000",
+        "+	c #0078D4",
+        "                                ",
+        "                                ",
+        "        ....................    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        .++++++++++++++++++.    ",
+        "        ....................    ",
+        "                                ",
+        "                                ",
+        "                                "};
+        EOF
+        
+        # Create copyright file
+        cat > "$DEB_DIR/usr/share/doc/$PACKAGE_NAME/copyright" << EOF
+        Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+        Upstream-Name: concrete-backup
+        Source: https://github.com/wanjawischmeier/concrete-backup
+        
+        Files: *
+        Copyright: $(date +%Y) Wanja Wischmeier <wanja.wischmeier@gmail.com>
+        License: MIT
+        
+        License: MIT
+         Permission is hereby granted, free of charge, to any person obtaining a
+         copy of this software and associated documentation files (the "Software"),
+         to deal in the Software without restriction, including without limitation
+         the rights to use, copy, modify, merge, publish, distribute, sublicense,
+         and/or sell copies of the Software, and to permit persons to whom the
+         Software is furnished to do so, subject to the following conditions:
+         .
+         The above copyright notice and this permission notice shall be included
+         in all copies or substantial portions of the Software.
+         .
+         THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+         OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+         FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+         THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+         FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+         DEALINGS IN THE SOFTWARE.
+        EOF
+        
+        # Create changelog
+        cat > "$DEB_DIR/usr/share/doc/$PACKAGE_NAME/changelog.Debian" << EOF
+        concrete-backup ($VERSION-1) unstable; urgency=medium
+        
+          * Automated build for version $VERSION
+          * Added proper desktop integration
+          * Added privilege escalation support
+        
+         -- GitHub Actions <actions@github.com>  $(date -R)
+        EOF
+        gzip -9 "$DEB_DIR/usr/share/doc/$PACKAGE_NAME/changelog.Debian"
+        
+        # Create control file
+        INSTALLED_SIZE=$(du -s "$DEB_DIR" | cut -f1)
+        cat > "$DEB_DIR/DEBIAN/control" << EOF
+        Package: concrete-backup
+        Version: $VERSION-1
+        Section: utils
+        Priority: optional
+        Architecture: amd64
+        Installed-Size: $INSTALLED_SIZE
+        Depends: policykit-1
+        Recommends: libqt5core5a, libqt5widgets5, libqt5gui5
+        Maintainer: Wanja Wischmeier <wanja.wischmeier@gmail.com>
+        Description: Advanced backup solution with GUI and scheduling
+         Concrete Backup is a comprehensive backup solution that provides:
+         - Graphical user interface for easy configuration
+         - Multiple source and destination support
+         - Automated scheduling with cron integration
+         - Custom command execution
+         - Dry run mode for testing
+         - Detailed logging and progress tracking
+         .
+         The application is self-contained and includes all necessary dependencies.
+         It integrates with the desktop environment and handles privilege escalation
+         automatically when administrative access is required.
+        Homepage: https://github.com/wanjawischmeier/concrete-backup
+        EOF
+        
+        # Remove the postinst script since we don't need to install Python deps
+        # The executable is self-contained
+        
+        # Create prerm script to clean up
+        cat > "$DEB_DIR/DEBIAN/prerm" << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        case "$1" in
+            remove|upgrade|deconfigure)
+                echo "Cleaning up Concrete Backup..."
+                # Remove any created cron jobs
+                if command -v crontab >/dev/null 2>&1; then
+                    # Remove jobs for all users who might have them
+                    for user_home in /home/*; do
+                        if [ -d "$user_home" ]; then
+                            user=$(basename "$user_home")
+                            sudo -u "$user" crontab -l 2>/dev/null | grep -v "concrete-backup" | sudo -u "$user" crontab - 2>/dev/null || true
+                        fi
+                    done
+                    # Also clean root crontab
+                    crontab -l 2>/dev/null | grep -v "concrete-backup" | crontab - 2>/dev/null || true
+                fi
+                ;;
+        esac
+        
+        exit 0
+        EOF
+        chmod +x "$DEB_DIR/DEBIAN/prerm"
+
+    - name: Build Debian package
+      run: |
+        VERSION="${{ steps.get-version.outputs.version }}"
+        DEB_DIR="debian-package"
+        
+        # Build the package
+        dpkg-deb --build "$DEB_DIR" "concrete-backup_${VERSION}-1_amd64.deb"
+        
+        # Verify the package
+        echo "Package contents:"
+        dpkg-deb --contents "concrete-backup_${VERSION}-1_amd64.deb"
+        
+        echo "Package info:"
+        dpkg-deb --info "concrete-backup_${VERSION}-1_amd64.deb"
+
+    - name: Test Debian package
+      run: |
+        VERSION="${{ steps.get-version.outputs.version }}"
+        PACKAGE_FILE="concrete-backup_${VERSION}-1_amd64.deb"
+        
+        # Test that the package was created
+        if [ -f "$PACKAGE_FILE" ]; then
+          echo "✓ Debian package created successfully"
+          ls -la "$PACKAGE_FILE"
+          
+          # Test that the executable is included and works
+          echo "Testing package contents..."
+          dpkg-deb --contents "$PACKAGE_FILE" | grep concrete-backup-bin
+          
+          # Test package installation (dry run)
+          echo "Testing package installation (dry run)..."
+          sudo dpkg --dry-run -i "$PACKAGE_FILE"
+          
+          echo "✓ Package installation test passed"
+        else
+          echo "✗ Debian package not found"
           exit 1
         fi
 
-    - name: Upload executable artifact
+    - name: Upload Debian package artifact
       uses: actions/upload-artifact@v4
       with:
-        name: concrete-backup-${{ steps.get-version.outputs.version }}-linux
-        path: dist/concrete-backup-${{ steps.get-version.outputs.version }}
-        retention-days: 30
-
-    - name: Create application bundle
-      run: |
-        EXECUTABLE_NAME="concrete-backup-${{ steps.get-version.outputs.version }}"
-        BUNDLE_NAME="concrete-backup-${{ steps.get-version.outputs.version }}-bundle"
-        
-        mkdir -p "$BUNDLE_NAME"
-        cp "dist/$EXECUTABLE_NAME" "$BUNDLE_NAME/concrete-backup"
-        cp run_backup_gui.sh "$BUNDLE_NAME/"
-        cp README.md "$BUNDLE_NAME/"
-        chmod +x "$BUNDLE_NAME/concrete-backup"
-        chmod +x "$BUNDLE_NAME/run_backup_gui.sh"
-
-    - name: Upload application bundle
-      uses: actions/upload-artifact@v4
-      with:
-        name: concrete-backup-${{ steps.get-version.outputs.version }}-bundle-linux
-        path: concrete-backup-${{ steps.get-version.outputs.version }}-bundle/
+        name: concrete-backup-${{ steps.get-version.outputs.version }}-deb
+        path: concrete-backup_${{ steps.get-version.outputs.version }}-1_amd64.deb
         retention-days: 30
 
   release:
@@ -173,33 +378,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Download executable artifact
+    - name: Download Debian package artifact
       uses: actions/download-artifact@v4
       with:
-        name: concrete-backup-${{ needs.build.outputs.version }}-linux
+        name: concrete-backup-${{ needs.build.outputs.version }}-deb
         path: artifacts/
-
-    - name: Download bundle artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: concrete-backup-${{ needs.build.outputs.version }}-bundle-linux
-        path: bundle-artifacts/
 
     - name: Create release archive
       run: |
         VERSION="${{ needs.build.outputs.version }}"
         
-        # Create standalone executable archive
+        # Create Debian package archive
         mkdir -p release-files
-        cp artifacts/concrete-backup-$VERSION release-files/
-        cd release-files
-        tar -czf concrete-backup-$VERSION-linux-x86_64.tar.gz concrete-backup-$VERSION
-        cd ..
-        
-        # Create bundle archive
-        cd bundle-artifacts
-        tar -czf ../release-files/concrete-backup-$VERSION-bundle-linux-x86_64.tar.gz *
-        cd ..
+        cp artifacts/concrete-backup_${VERSION}-1_amd64.deb release-files/
 
     - name: Check if release exists
       id: release_exists
@@ -228,26 +419,36 @@ jobs:
         
         ## Downloads
         
-        - **concrete-backup-$VERSION-linux-x86_64.tar.gz**: Standalone executable for Linux
-        - **concrete-backup-$VERSION-bundle-linux-x86_64.tar.gz**: Complete bundle with executable, scripts, and documentation
+        - **concrete-backup_${VERSION}-1_amd64.deb**: Debian package for Ubuntu/Debian systems with full desktop integration
         
         ## Installation
         
-        1. Download the bundle archive
-        2. Extract: \`tar -xzf concrete-backup-$VERSION-bundle-linux-x86_64.tar.gz\`
-        3. Run: \`./run_backup_gui.sh\` or \`./concrete-backup\`
+        ### Ubuntu/Debian:
+        1. Download the .deb package
+        2. Install: \`sudo dpkg -i concrete-backup_${VERSION}-1_amd64.deb\`
+        3. If dependencies are missing: \`sudo apt-get install -f\`
+        4. Launch from applications menu or run \`concrete-backup\` in terminal
+        
+        ## Features
+        
+        - **Desktop Integration**: Appears in applications menu with proper icon
+        - **Privilege Escalation**: Automatically prompts for password when elevated access is needed
+        - **Graphical Interface**: Full PyQt5-based GUI for backup configuration
+        - **Scheduled Backups**: Cron integration for automated backups
+        - **Multiple Destinations**: Support for various backup targets
         
         ## System Requirements
         
-        - Linux x86_64
-        - No additional dependencies required (statically linked)
+        - Ubuntu 18.04+ or Debian 10+
+        - X11 or Wayland desktop environment
+        - PolicyKit for privilege escalation (usually pre-installed)
+        - No Python dependencies required (self-contained executable)
         EOF
         
         # Create the release
         gh release create "v$VERSION" \
           --title "Concrete Backup v$VERSION" \
           --notes-file release-notes.md \
-          release-files/concrete-backup-$VERSION-linux-x86_64.tar.gz \
-          release-files/concrete-backup-$VERSION-bundle-linux-x86_64.tar.gz
+          release-files/concrete-backup_${VERSION}-1_amd64.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
