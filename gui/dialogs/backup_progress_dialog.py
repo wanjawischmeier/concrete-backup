@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTextEdit, QProgressBar, QMessageBox
 )
-from gui.workers.backup_worker import BackupWorker
+from workers.backup_worker import BackupWorker
 from backup_config import BackupProfile
 
 

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from backup_config import BackupConfigManager, BackupDestination, BackupProfile
-from drive_manager import DriveManager
+from managers.drive_manager import DriveManager
 
 
 class BackupEngine:

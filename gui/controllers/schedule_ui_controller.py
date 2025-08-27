@@ -4,25 +4,25 @@ Schedule UI Controller
 Handles all schedule-related UI operations.
 """
 
-from PyQt5.QtWidgets import QWidget, QMessageBox, QLabel, QCheckBox
+from PyQt5.QtWidgets import QWidget, QMessageBox, QLabel, QPushButton
 
 from backup_config import BackupProfile
-from cron_manager import CronManager
+from managers.cron_manager import CronManager
 
 
 class ScheduleUIController:
     """Controls schedule-related UI operations."""
 
-    def __init__(self, parent_widget: QWidget, schedule_status_label: QLabel, schedule_enabled_cb: QCheckBox):
+    def __init__(self, parent_widget: QWidget, schedule_status_label: QLabel, schedule_toggle_btn: QPushButton):
         """Initialize the schedule UI controller."""
         self.parent_widget = parent_widget
         self.schedule_status_label = schedule_status_label
-        self.schedule_enabled_cb = schedule_enabled_cb
+        self.schedule_toggle_btn = schedule_toggle_btn
 
         self.cron_manager = CronManager(parent_widget=parent_widget)
 
-        # Connect signals
-        self.schedule_enabled_cb.stateChanged.connect(self.toggle_schedule)
+        # Connect signals - QPushButton uses toggled signal instead of stateChanged
+        self.schedule_toggle_btn.toggled.connect(self.toggle_schedule)
 
     def on_schedule_changed(self, profile: BackupProfile, old_schedule):
         """Handle schedule changes."""
@@ -38,7 +38,7 @@ class ScheduleUIController:
                         f"Failed to update schedule: {message}"
                     )
 
-    def toggle_schedule(self, state):
+    def toggle_schedule(self, checked):
         """Toggle schedule enabled/disabled."""
         # This method will be connected to from the main widget
         # since it needs access to the profile
@@ -58,8 +58,8 @@ class ScheduleUIController:
                 )
 
                 if reply == QMessageBox.No:
-                    # User doesn't want to save, revert checkbox
-                    self.schedule_enabled_cb.setChecked(False)
+                    # User doesn't want to save, revert button
+                    self.schedule_toggle_btn.setChecked(False)
                     return
                 # If Yes, the main widget should save the profile first
                 return "save_required"
@@ -73,7 +73,7 @@ class ScheduleUIController:
                     "Scheduling Error",
                     f"Failed to schedule backup: {message}"
                 )
-                self.schedule_enabled_cb.setChecked(False)
+                self.schedule_toggle_btn.setChecked(False)
                 profile.schedule.enabled = False
         else:
             # Disabling schedule
@@ -94,8 +94,8 @@ class ScheduleUIController:
     def load_schedule_from_profile(self, profile: BackupProfile):
         """Load schedule settings from profile."""
         if profile and profile.schedule:
-            self.schedule_enabled_cb.setChecked(profile.schedule.enabled)
+            self.schedule_toggle_btn.setChecked(profile.schedule.enabled)
         else:
-            self.schedule_enabled_cb.setChecked(False)
+            self.schedule_toggle_btn.setChecked(False)
 
         self.update_schedule_status()

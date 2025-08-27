@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTime
 
 from backup_config import BackupProfile
-from cron_manager import CronManager
+from managers.cron_manager import CronManager
 
 
 class ScheduleTab(QWidget):

@@ -10,7 +10,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import QWidget, QMessageBox, QLabel
 
 from backup_config import BackupConfigManager, BackupProfile
-from gui.profile_manager import ProfileManager
+from managers.profile_manager import ProfileManager
 
 
 class ProfileUIController:

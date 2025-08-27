@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSignal
 
-from drive_manager import DriveManager
+from managers.drive_manager import DriveManager
 
 
 class DriveSelectionWidget(QWidget):
