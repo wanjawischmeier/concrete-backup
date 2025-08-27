@@ -1,0 +1,22 @@
+Package: concrete-backup
+Version: VERSION-1
+Section: utils
+Priority: optional
+Architecture: amd64
+Installed-Size: INSTALLED_SIZE
+Depends: policykit-1
+Recommends: libqt5core5a, libqt5widgets5, libqt5gui5
+Maintainer: Wanja Wischmeier <wanja.wischmeier@gmail.com>
+Description: Advanced backup solution with GUI and scheduling
+ Concrete Backup is a comprehensive backup solution that provides:
+ - Graphical user interface for easy configuration
+ - Multiple source and destination support
+ - Automated scheduling with cron integration
+ - Custom command execution
+ - Dry run mode for testing
+ - Detailed logging and progress tracking
+ .
+ The application is self-contained and includes all necessary dependencies.
+ It integrates with the desktop environment and handles privilege escalation
+ automatically when administrative access is required.
+Homepage: https://github.com/wanjawischmeier/concrete-backup
