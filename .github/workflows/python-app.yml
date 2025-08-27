@@ -246,6 +246,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Make scripts executable
+      run: chmod +x .github/scripts/*.sh
+
     - name: Download Debian package artifact
       uses: actions/download-artifact@v4
       with:
