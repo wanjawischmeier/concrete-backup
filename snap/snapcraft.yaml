@@ -1,0 +1,86 @@
+name: concrete-backup
+version: git
+summary: A simple and powerful backup solution
+description: |
+  Concrete Backup is a user-friendly backup application that helps you
+  backup your important files and directories with scheduling support
+  and multiple destination options.
+
+base: core22
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  concrete-backup:
+    command: bin/concrete-backup
+    desktop: usr/share/applications/concrete-backup.desktop
+    plugs:
+      - home
+      - removable-media
+      - network
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - unity7
+
+parts:
+  concrete-backup:
+    plugin: python
+    source: .
+    python-packages:
+      - poetry
+    stage-packages:
+      - libqt5gui5
+      - libqt5widgets5
+      - libqt5core5a
+      - libqt5dbus5
+      - libqt5network5
+      - python3-pyqt5
+    override-build: |
+      craftctl default
+      
+      # Install Poetry and dependencies
+      pip install poetry
+      poetry config virtualenvs.create false
+      poetry install --only=main
+      
+      # Build with PyInstaller
+      poetry run pyinstaller \
+        --onefile \
+        --name concrete-backup \
+        --hidden-import=PyQt5.QtCore \
+        --hidden-import=PyQt5.QtGui \
+        --hidden-import=PyQt5.QtWidgets \
+        --add-data="icon.png:." \
+        backup_gui.py
+      
+      # Copy the binary to the install directory
+      mkdir -p $CRAFTCTL_INSTALL/bin/
+      cp dist/concrete-backup $CRAFTCTL_INSTALL/bin/
+      
+      # Copy the desktop file
+      mkdir -p $CRAFTCTL_INSTALL/usr/share/applications/
+      cat > $CRAFTCTL_INSTALL/usr/share/applications/concrete-backup.desktop << EOF
+      [Desktop Entry]
+      Name=Concrete Backup
+      Comment=A simple backup solution
+      Exec=concrete-backup
+      Icon=concrete-backup
+      Terminal=false
+      Type=Application
+      Categories=Utility;System;
+      EOF
+      
+      # Copy icon
+      mkdir -p $CRAFTCTL_INSTALL/usr/share/pixmaps/
+      cp icon.png $CRAFTCTL_INSTALL/usr/share/pixmaps/concrete-backup.png
+    build-packages:
+      - python3-dev
+      - python3-pip
+      - python3-setuptools
+      - build-essential

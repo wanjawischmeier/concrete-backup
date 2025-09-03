@@ -205,3 +205,50 @@ jobs:
           *.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-snap:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    outputs:
+      snap-file: ${{ steps.build-snap.outputs.snap }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Snap
+      uses: snapcore/action-build@v1
+      id: build-snap
+
+    # Test that the snap is installable
+    - name: Test snap installation
+      run: |
+        sudo snap install --dangerous ${{ steps.build-snap.outputs.snap }}
+        # Test that the snap works
+        echo "Snap installed successfully"
+
+    - name: Upload snap to release
+      uses: softprops/action-gh-release@v1
+      if: github.event_name == 'release'
+      with:
+        files: ${{ steps.build-snap.outputs.snap }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-snap:
+    runs-on: ubuntu-latest
+    needs: [build-snap]
+    if: github.event_name == 'release'
+    steps:
+    - name: Download snap artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ needs.build-snap.outputs.snap-file }}
+        path: .
+
+    - name: Publish to Snap Store
+      uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+      with:
+        snap: ${{ needs.build-snap.outputs.snap-file }}
+        release: stable
