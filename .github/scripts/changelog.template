@@ -1,7 +1,0 @@
-concrete-backup (VERSION-1) unstable; urgency=medium
-
-  * Automated build for version VERSION
-  * Added proper desktop integration
-  * Added privilege escalation support
-
- -- GitHub Actions <actions@github.com>  DATE
