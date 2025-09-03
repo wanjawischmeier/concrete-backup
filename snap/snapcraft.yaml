@@ -33,15 +33,15 @@ parts:
     plugin: nil
     source: .
     override-build: |
-      # Install Poetry using the system pip (with --break-system-packages for Ubuntu 24.04+)
-      python3 -m pip install --break-system-packages poetry pyinstaller
+      # Install Poetry using the official installer (same as GitHub Actions)
+      curl -sSL https://install.python-poetry.org | python3 -
+      export PATH="/root/.local/bin:$PATH"
       
-      # Install dependencies using Poetry (in application mode)
-      python3 -m poetry config virtualenvs.create false
-      python3 -m poetry install --only=main
+      # Install dependencies using Poetry (including dev dependencies for PyInstaller)
+      poetry install --no-interaction --with dev
       
-      # Build with PyInstaller
-      python3 -m pyinstaller \
+      # Build with PyInstaller (using poetry run, same as GitHub Actions)
+      poetry run pyinstaller \
         --onefile \
         --name concrete-backup \
         --hidden-import=PyQt5.QtCore \
@@ -82,3 +82,4 @@ parts:
       - python3-pip
       - python3-dev
       - build-essential
+      - curl
