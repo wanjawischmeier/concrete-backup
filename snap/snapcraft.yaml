@@ -10,9 +10,9 @@ base: core24
 grade: stable
 confinement: strict
 
-architectures:
-  - build-on: amd64
-  - build-on: arm64
+platforms:
+  amd64:
+  arm64:
 
 apps:
   concrete-backup:
@@ -33,16 +33,9 @@ parts:
     plugin: nil
     source: .
     override-build: |
-      # Install Python 3.12 and pip
-      apt-get update
-      apt-get install -y software-properties-common
-      add-apt-repository ppa:deadsnakes/ppa -y
-      apt-get update
-      apt-get install -y python3.12 python3.12-pip python3.12-venv python3.12-dev
-      
-      # Make Python 3.12 the default python3
-      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
-      update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.12 1
+      # Ensure Python 3.12 is available and set as default
+      ln -sf /usr/bin/python3.12 /usr/bin/python3
+      ln -sf /usr/bin/pip3.12 /usr/bin/pip3
       
       # Install Poetry
       python3 -m pip install poetry
@@ -93,5 +86,8 @@ parts:
       - python3-pyqt5
     build-packages:
       - software-properties-common
+      - python3.12
+      - python3.12-pip
+      - python3.12-venv
       - python3.12-dev
       - build-essential
