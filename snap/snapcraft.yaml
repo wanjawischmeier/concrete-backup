@@ -54,6 +54,10 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/bin/
       cp dist/concrete-backup $CRAFT_PART_INSTALL/bin/
       
+      # Copy icon first
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/pixmaps/
+      cp icon.png $CRAFT_PART_INSTALL/usr/share/pixmaps/concrete-backup.png
+      
       # Copy the desktop file
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications/
       cat > $CRAFT_PART_INSTALL/usr/share/applications/concrete-backup.desktop << EOF
@@ -61,15 +65,11 @@ parts:
       Name=Concrete Backup
       Comment=A simple backup solution
       Exec=concrete-backup
-      Icon=concrete-backup
+      Icon=/usr/share/pixmaps/concrete-backup.png
       Terminal=false
       Type=Application
       Categories=Utility;System;
       EOF
-      
-      # Copy icon
-      mkdir -p $CRAFT_PART_INSTALL/usr/share/pixmaps/
-      cp icon.png $CRAFT_PART_INSTALL/usr/share/pixmaps/concrete-backup.png
     stage-packages:
       - libqt5gui5
       - libqt5widgets5

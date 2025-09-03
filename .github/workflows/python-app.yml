@@ -228,6 +228,12 @@ jobs:
         # Test that the snap works
         echo "Snap installed successfully"
 
+    - name: Upload snap as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: snap-package
+        path: ${{ steps.build-snap.outputs.snap }}
+
     - name: Upload snap to release
       uses: softprops/action-gh-release@v1
       if: github.event_name == 'release'
@@ -244,7 +250,7 @@ jobs:
     - name: Download snap artifact
       uses: actions/download-artifact@v4
       with:
-        name: ${{ needs.build-snap.outputs.snap-file }}
+        name: snap-package
         path: .
 
     - name: Publish to Snap Store
@@ -252,5 +258,5 @@ jobs:
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
       with:
-        snap: ${{ needs.build-snap.outputs.snap-file }}
+        snap: "*.snap"
         release: stable
