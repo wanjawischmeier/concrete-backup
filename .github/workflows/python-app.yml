@@ -218,6 +218,8 @@ jobs:
     - name: Build Snap
       uses: snapcore/action-build@v1
       id: build-snap
+      with:
+        snapcraft-args: pack
 
     # Test that the snap is installable
     - name: Test snap installation

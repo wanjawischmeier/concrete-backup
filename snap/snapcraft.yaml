@@ -6,7 +6,7 @@ description: |
   backup your important files and directories with scheduling support
   and multiple destination options.
 
-base: core22
+base: core24
 grade: stable
 confinement: strict
 
@@ -33,22 +33,29 @@ parts:
     plugin: nil
     source: .
     override-build: |
-      # Install Python and pip
+      # Install Python 3.12 and pip
       apt-get update
-      apt-get install -y python3 python3-pip python3-venv
+      apt-get install -y software-properties-common
+      add-apt-repository ppa:deadsnakes/ppa -y
+      apt-get update
+      apt-get install -y python3.12 python3.12-pip python3.12-venv python3.12-dev
+      
+      # Make Python 3.12 the default python3
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+      update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.12 1
       
       # Install Poetry
-      pip3 install poetry
+      python3 -m pip install poetry
       
       # Install dependencies using Poetry (in application mode)
-      poetry config virtualenvs.create false
-      poetry install --only=main
+      python3 -m poetry config virtualenvs.create false
+      python3 -m poetry install --only=main
       
       # Install PyInstaller in the same environment
-      pip3 install pyinstaller
+      python3 -m pip install pyinstaller
       
       # Build with PyInstaller
-      pyinstaller \
+      python3 -m pyinstaller \
         --onefile \
         --name concrete-backup \
         --hidden-import=PyQt5.QtCore \
@@ -85,7 +92,6 @@ parts:
       - libqt5network5
       - python3-pyqt5
     build-packages:
-      - python3-dev
-      - python3-pip
-      - python3-setuptools
+      - software-properties-common
+      - python3.12-dev
       - build-essential
