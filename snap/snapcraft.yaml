@@ -51,12 +51,12 @@ parts:
         backup_gui.py
       
       # Copy the binary to the install directory
-      mkdir -p $CRAFTCTL_INSTALL/bin/
-      cp dist/concrete-backup $CRAFTCTL_INSTALL/bin/
+      mkdir -p $CRAFT_PART_INSTALL/bin/
+      cp dist/concrete-backup $CRAFT_PART_INSTALL/bin/
       
       # Copy the desktop file
-      mkdir -p $CRAFTCTL_INSTALL/usr/share/applications/
-      cat > $CRAFTCTL_INSTALL/usr/share/applications/concrete-backup.desktop << EOF
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/applications/
+      cat > $CRAFT_PART_INSTALL/usr/share/applications/concrete-backup.desktop << EOF
       [Desktop Entry]
       Name=Concrete Backup
       Comment=A simple backup solution
@@ -68,8 +68,8 @@ parts:
       EOF
       
       # Copy icon
-      mkdir -p $CRAFTCTL_INSTALL/usr/share/pixmaps/
-      cp icon.png $CRAFTCTL_INSTALL/usr/share/pixmaps/concrete-backup.png
+      mkdir -p $CRAFT_PART_INSTALL/usr/share/pixmaps/
+      cp icon.png $CRAFT_PART_INSTALL/usr/share/pixmaps/concrete-backup.png
     stage-packages:
       - libqt5gui5
       - libqt5widgets5
