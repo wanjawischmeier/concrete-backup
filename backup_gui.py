@@ -5,11 +5,21 @@ Main application for configuring and managing backup profiles.
 """
 
 import sys
+import os
 import argparse
 import traceback
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from gui.main_window import MainWindow
 from version import get_version
+
+
+def check_privileges():
+    """Check if the application is running with root privileges."""
+    if os.geteuid() != 0:
+        print("Error: Concrete Backup requires root privileges to manage system backups.")
+        print("Please run with sudo:")
+        print("  sudo concrete-backup")
+        sys.exit(1)
 
 
 def parse_arguments():
@@ -33,7 +43,10 @@ def parse_arguments():
 
 def main():
     """Main application entry point."""
-    # Parse command line arguments first
+    # Check privileges first
+    check_privileges()
+    
+    # Parse command line arguments
     args = parse_arguments()
 
     # Handle special modes

@@ -123,6 +123,7 @@ jobs:
           --hidden-import=PyQt5.QtCore \
           --hidden-import=PyQt5.QtGui \
           --hidden-import=PyQt5.QtWidgets \
+          --hidden-import=pkgutil \
           --add-data="icon.png:." \
           backup_gui.py
 
@@ -145,18 +146,6 @@ jobs:
         # Copy icon
         cp icon.png concrete-backup_${VERSION}/usr/share/pixmaps/concrete-backup.png
         
-        # Create desktop file
-        cat > concrete-backup_${VERSION}/usr/share/applications/concrete-backup.desktop << EOF
-        [Desktop Entry]
-        Name=Concrete Backup
-        Comment=A simple backup solution
-        Exec=/usr/bin/concrete-backup
-        Icon=concrete-backup
-        Terminal=false
-        Type=Application
-        Categories=Utility;System;
-        EOF
-        
         # Create control file
         cat > concrete-backup_${VERSION}/DEBIAN/control << EOF
         Package: concrete-backup
@@ -164,10 +153,41 @@ jobs:
         Section: utils
         Priority: optional
         Architecture: ${ARCH}
+        Depends: policykit-1
         Maintainer: wanjawischmeier
         Description: A simple backup solution
          Concrete Backup is a user-friendly backup application that helps you
          backup your important files and directories.
+        EOF
+        
+        # Create wrapper script for privilege escalation
+        cat > concrete-backup_${VERSION}/usr/bin/concrete-backup-gui << 'EOF'
+        #!/bin/bash
+        # Wrapper script for Concrete Backup GUI with privilege escalation
+        
+        if command -v pkexec >/dev/null 2>&1; then
+            # Use pkexec for GUI password prompt
+            pkexec env DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" /usr/bin/concrete-backup "$@"
+        elif command -v sudo >/dev/null 2>&1; then
+            # Fallback to sudo
+            sudo /usr/bin/concrete-backup "$@"
+        else
+            echo "Error: No privilege escalation method available (pkexec or sudo required)"
+            exit 1
+        fi
+        EOF
+        chmod +x concrete-backup_${VERSION}/usr/bin/concrete-backup-gui
+        
+        # Update desktop file to use wrapper
+        cat > concrete-backup_${VERSION}/usr/share/applications/concrete-backup.desktop << EOF
+        [Desktop Entry]
+        Name=Concrete Backup
+        Comment=A simple backup solution
+        Exec=/usr/bin/concrete-backup-gui
+        Icon=concrete-backup
+        Terminal=false
+        Type=Application
+        Categories=Utility;System;
         EOF
         
         # Build package
@@ -188,9 +208,33 @@ jobs:
         # Create simple install script
         cat > concrete-backup-${VERSION}-linux-${ARCH}/install.sh << 'EOF'
         #!/bin/bash
+        echo "Installing Concrete Backup..."
+        
+        # Install the binary
         sudo cp concrete-backup /usr/local/bin/
         sudo chmod +x /usr/local/bin/concrete-backup
-        echo "Concrete Backup installed to /usr/local/bin/concrete-backup"
+        
+        # Create wrapper script for privilege escalation
+        sudo tee /usr/local/bin/concrete-backup-gui > /dev/null << 'WRAPPER_EOF'
+        #!/bin/bash
+        # Wrapper script for Concrete Backup GUI with privilege escalation
+        
+        if command -v pkexec >/dev/null 2>&1; then
+            # Use pkexec for GUI password prompt
+            pkexec env DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" /usr/local/bin/concrete-backup "$@"
+        elif command -v sudo >/dev/null 2>&1; then
+            # Fallback to sudo
+            sudo /usr/local/bin/concrete-backup "$@"
+        else
+            echo "Error: No privilege escalation method available (pkexec or sudo required)"
+            exit 1
+        fi
+        WRAPPER_EOF
+        
+        sudo chmod +x /usr/local/bin/concrete-backup-gui
+        
+        echo "Concrete Backup installed successfully!"
+        echo "Run with: concrete-backup-gui"
         EOF
         chmod +x concrete-backup-${VERSION}-linux-${ARCH}/install.sh
         

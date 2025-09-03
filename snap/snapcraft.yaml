@@ -27,6 +27,9 @@ apps:
       - wayland
       - x11
       - unity7
+      - system-observe
+      - mount-observe
+      - hardware-observe
 
 parts:
   concrete-backup:
@@ -47,6 +50,7 @@ parts:
         --hidden-import=PyQt5.QtCore \
         --hidden-import=PyQt5.QtGui \
         --hidden-import=PyQt5.QtWidgets \
+        --hidden-import=pkgutil \
         --add-data="icon.png:." \
         backup_gui.py
       
