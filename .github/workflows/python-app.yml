@@ -253,10 +253,24 @@ jobs:
         name: snap-package
         path: .
 
-    - name: Publish to Snap Store
-      uses: snapcore/action-publish@v1
+    - name: List downloaded files
+      run: |
+        echo "Downloaded files:"
+        ls -la
+        echo "Looking for snap files:"
+        find . -name "*.snap" -type f
+
+    - name: Find and publish snap
+      run: |
+        SNAP_FILE=$(find . -name "*.snap" -type f | head -1)
+        echo "Found snap file: $SNAP_FILE"
+        if [ -z "$SNAP_FILE" ]; then
+          echo "No snap file found!"
+          exit 1
+        fi
+        
+        # Install snapcraft and publish
+        sudo snap install --classic snapcraft
+        snapcraft upload "$SNAP_FILE" --release stable
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-      with:
-        snap: "*.snap"
-        release: stable
