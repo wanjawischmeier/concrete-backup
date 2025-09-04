@@ -31,7 +31,7 @@ class BackupConfigUIBuilder:
         layout.addWidget(tab_widget)
 
         # Create actions section
-        (actions_layout, schedule_toggle_btn, dry_run_cb, log_enabled_cb, run_now_btn) = (
+        (actions_layout, schedule_toggle_btn, run_now_btn) = (
             BackupConfigUIBuilder.create_actions_section()
         )
         layout.addLayout(actions_layout)
@@ -46,8 +46,6 @@ class BackupConfigUIBuilder:
             'save_as_profile_btn': save_as_profile_btn,
             'tab_widget': tab_widget,
             'schedule_toggle_btn': schedule_toggle_btn,
-            'dry_run_cb': dry_run_cb,
-            'log_enabled_cb': log_enabled_cb,
             'run_now_btn': run_now_btn
         }
 
@@ -96,49 +94,26 @@ class BackupConfigUIBuilder:
 
     @staticmethod
     def create_actions_section():
-        """Create the actions section with schedule, options, and run button."""
-        # Main actions layout
+        """Create the actions section with schedule and run buttons in a horizontal layout."""
+        # Main actions layout - horizontal for buttons
         actions_layout = QHBoxLayout()
-        actions_layout.setSpacing(20)
+        actions_layout.setSpacing(15)
 
-        # Left side: Options (vertical)
-        options_group = QWidget()
-        options_layout = QVBoxLayout(options_group)
-        options_layout.setContentsMargins(0, 0, 0, 0)
-        options_layout.setSpacing(8)
+        # Add stretch before buttons to center them
+        actions_layout.addStretch()
 
-        dry_run_cb = QCheckBox("Dry Run")
-        dry_run_cb.setToolTip("Test mode - shows what would be backed up without actually copying files")
-        options_layout.addWidget(dry_run_cb)
-
-        log_enabled_cb = QCheckBox("Enable Logging")
-        log_enabled_cb.setChecked(True)
-        log_enabled_cb.setToolTip("Save backup operations to log files")
-        options_layout.addWidget(log_enabled_cb)
-
-        options_layout.addStretch()  # Push options to top
-
-        actions_layout.addWidget(options_group)
-        actions_layout.addStretch()  # Space between left and right
-
-        # Right side: Buttons (vertical)
-        buttons_group = QWidget()
-        buttons_layout = QVBoxLayout(buttons_group)
-        buttons_layout.setContentsMargins(0, 0, 0, 0)
-        buttons_layout.setSpacing(10)
-
-        # Schedule button on top
+        # Schedule button on the left
         schedule_toggle_btn = QPushButton("Enable Scheduling")
         schedule_toggle_btn.setCheckable(True)
-        schedule_toggle_btn.setMinimumHeight(35)
-        schedule_toggle_btn.setMinimumWidth(150)
+        schedule_toggle_btn.setMinimumHeight(45)
+        schedule_toggle_btn.setMinimumWidth(160)
         BackupConfigUIBuilder._apply_schedule_button_style(schedule_toggle_btn, enabled=False)
-        buttons_layout.addWidget(schedule_toggle_btn)
+        actions_layout.addWidget(schedule_toggle_btn)
 
-        # Run backup button below
+        # Run backup button on the right
         run_now_btn = QPushButton("Run Backup Now")
         run_now_btn.setMinimumHeight(45)
-        run_now_btn.setMinimumWidth(150)
+        run_now_btn.setMinimumWidth(160)
         run_now_btn.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50;
@@ -146,22 +121,25 @@ class BackupConfigUIBuilder:
                 font-weight: bold;
                 font-size: 14px;
                 padding: 12px 20px;
-                border: none;
+                border: 2px solid #388E3C;
                 border-radius: 6px;
             }
             QPushButton:hover {
                 background-color: #45a049;
+                border: 2px solid #2E7D32;
             }
             QPushButton:disabled {
                 background-color: #cccccc;
                 color: #666666;
+                border: 2px solid #cccccc;
             }
         """)
-        buttons_layout.addWidget(run_now_btn)
+        actions_layout.addWidget(run_now_btn)
 
-        actions_layout.addWidget(buttons_group)
+        # Add stretch after buttons to center them
+        actions_layout.addStretch()
 
-        return actions_layout, schedule_toggle_btn, dry_run_cb, log_enabled_cb, run_now_btn
+        return actions_layout, schedule_toggle_btn, run_now_btn
 
     @staticmethod
     def _apply_schedule_button_style(button: QPushButton, enabled: bool):
@@ -173,12 +151,14 @@ class BackupConfigUIBuilder:
                     background-color: #FF6B6B;
                     color: white;
                     font-weight: bold;
-                    padding: 8px 16px;
+                    font-size: 14px;
+                    padding: 12px 20px;
                     border: 2px solid #FF5252;
-                    border-radius: 4px;
+                    border-radius: 6px;
                 }
                 QPushButton:hover {
                     background-color: #FF5252;
+                    border: 2px solid #F44336;
                 }
                 QPushButton:disabled {
                     background-color: #cccccc;
@@ -194,12 +174,14 @@ class BackupConfigUIBuilder:
                     background-color: #2196F3;
                     color: white;
                     font-weight: bold;
-                    padding: 8px 16px;
+                    font-size: 14px;
+                    padding: 12px 20px;
                     border: 2px solid #1976D2;
-                    border-radius: 4px;
+                    border-radius: 6px;
                 }
                 QPushButton:hover {
                     background-color: #1976D2;
+                    border: 2px solid #1565C0;
                 }
                 QPushButton:disabled {
                     background-color: #cccccc;

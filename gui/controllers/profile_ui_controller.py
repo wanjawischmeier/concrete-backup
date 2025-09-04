@@ -31,9 +31,9 @@ class ProfileUIController:
         # Track if profile has unsaved changes
         self.is_dirty = False
 
-    def register_tabs(self, sources_tab, destinations_tab, schedule_tab, custom_commands_tab):
+    def register_tabs(self, tabs_list):
         """Register the tabs that need profile updates."""
-        self.tabs = [sources_tab, destinations_tab, schedule_tab, custom_commands_tab]
+        self.tabs = tabs_list
 
     @property
     def current_profile(self) -> Optional[BackupProfile]:

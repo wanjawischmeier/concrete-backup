@@ -83,7 +83,9 @@ App icon created by [juicy_fish - Flaticon](https://www.flaticon.com/free-icons/
 ## TODOs
 ### Fixes
 - [x] Centralized profile validation
+- [x] Proper register_tabs method
 
 ### Features
+- [x] Improved bottom section layout
 - [ ] Profile creation wizard
 - [ ] On profile validation failed: Point to invalid field

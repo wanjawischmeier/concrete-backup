@@ -18,6 +18,7 @@ from gui.tabs.destinations_tab import DestinationsTab
 from gui.tabs.schedule_tab import ScheduleTab
 from gui.tabs.custom_commands_tab import CustomCommandsTab
 from gui.controllers.profile_ui_controller import ProfileUIController
+from gui.tabs.advanced_settings_tab import AdvancedSettingsTab
 from gui.controllers.schedule_ui_controller import ScheduleUIController
 
 
@@ -56,8 +57,6 @@ class BackupConfigView(QWidget):
         self.schedule_mode_label = ui_components['schedule_mode_label']
         self.tab_widget = ui_components['tab_widget']
         self.schedule_toggle_btn = ui_components['schedule_toggle_btn']
-        self.dry_run_cb = ui_components['dry_run_cb']
-        self.log_enabled_cb = ui_components['log_enabled_cb']
         self.run_now_btn = ui_components['run_now_btn']
         self.save_profile_btn = ui_components['save_profile_btn']
         self.save_as_profile_btn = ui_components['save_as_profile_btn']
@@ -79,11 +78,13 @@ class BackupConfigView(QWidget):
         self.destinations_tab = DestinationsTab(self)
         self.schedule_tab = ScheduleTab(self)
         self.custom_commands_tab = CustomCommandsTab(self)
+        self.advanced_settings_tab = AdvancedSettingsTab(self)
 
         self.tab_widget.addTab(self.sources_tab, "Sources")
         self.tab_widget.addTab(self.destinations_tab, "Destinations")
         self.tab_widget.addTab(self.schedule_tab, "Schedule")
         self.tab_widget.addTab(self.custom_commands_tab, "Custom Commands")
+        self.tab_widget.addTab(self.advanced_settings_tab, "Advanced")
 
     def setup_controllers(self):
         """Setup the controllers."""
@@ -93,6 +94,15 @@ class BackupConfigView(QWidget):
         self.schedule_controller = ScheduleUIController(
             self, self.schedule_mode_label, self.schedule_toggle_btn
         )
+
+        # Register tabs with profile controller
+        self.profile_controller.register_tabs([
+            self.sources_tab, 
+            self.destinations_tab, 
+            self.schedule_tab, 
+            self.custom_commands_tab, 
+            self.advanced_settings_tab
+        ])
 
     @property
     def current_profile(self) -> Optional[BackupProfile]:
@@ -108,15 +118,15 @@ class BackupConfigView(QWidget):
     def save_current_profile(self):
         """Save the current profile."""
         return self.profile_controller.save_current_profile(
-            self.dry_run_cb.isChecked(),
-            self.log_enabled_cb.isChecked()
+            self.advanced_settings_tab.get_dry_run_enabled(),
+            self.advanced_settings_tab.get_log_enabled()
         )
 
     def save_profile_as(self):
         """Save the profile with a new name."""
         return self.profile_controller.save_profile_as(
-            self.dry_run_cb.isChecked(),
-            self.log_enabled_cb.isChecked()
+            self.advanced_settings_tab.get_dry_run_enabled(),
+            self.advanced_settings_tab.get_log_enabled()
         )
 
     def open_profile_file(self):
@@ -131,10 +141,7 @@ class BackupConfigView(QWidget):
             self.destinations_tab.load_from_profile(self.current_profile)
             self.schedule_tab.load_from_profile(self.current_profile)
             self.custom_commands_tab.load_from_profile(self.current_profile)
-
-            # Load checkboxes
-            self.dry_run_cb.setChecked(self.current_profile.dry_run)
-            self.log_enabled_cb.setChecked(self.current_profile.log_enabled)
+            self.advanced_settings_tab.load_from_profile(self.current_profile)
 
         self.update_schedule_status()
         self.update_ui_state()
@@ -166,10 +173,6 @@ class BackupConfigView(QWidget):
 
         # Enable/disable tabs
         self.tab_widget.setEnabled(has_profile)
-
-        # Enable/disable bottom checkboxes
-        self.dry_run_cb.setEnabled(has_profile)
-        self.log_enabled_cb.setEnabled(has_profile)
 
         # Update schedule button styling to ensure disabled state is properly styled
         if has_profile:
