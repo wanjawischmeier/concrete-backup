@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Concrete Backup")
+        self.setWindowTitle(self.tr("Concrete Backup"))
         self.setGeometry(100, 100, 700, 700)
 
         # Central widget
@@ -35,38 +35,38 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
 
         # Profile menu
-        profile_menu = menubar.addMenu('Profile')
+        profile_menu = menubar.addMenu(self.tr('Profile'))
 
-        new_action = profile_menu.addAction('New Profile')
+        new_action = profile_menu.addAction(self.tr('New Profile'))
         new_action.setShortcut('Ctrl+N')
         new_action.triggered.connect(self.backup_config.create_new_profile)
 
         profile_menu.addSeparator()
 
-        open_action = profile_menu.addAction('Open Profile...')
+        open_action = profile_menu.addAction(self.tr('Open Profile...'))
         open_action.setShortcut('Ctrl+O')
         open_action.triggered.connect(self.backup_config.open_profile_file)
 
         # Store references to actions that should be disabled when no profile is loaded
-        self.save_action = profile_menu.addAction('Save Profile')
+        self.save_action = profile_menu.addAction(self.tr('Save Profile'))
         self.save_action.setShortcut('Ctrl+S')
         self.save_action.triggered.connect(self.backup_config.save_current_profile)
 
-        self.save_as_action = profile_menu.addAction('Save Profile As...')
+        self.save_as_action = profile_menu.addAction(self.tr('Save Profile As...'))
         self.save_as_action.setShortcut('Ctrl+Shift+S')
         self.save_as_action.triggered.connect(self.backup_config.save_profile_as)
 
         # Actions menu
-        actions_menu = menubar.addMenu('Actions')
+        actions_menu = menubar.addMenu(self.tr('Actions'))
 
-        self.run_now_action = actions_menu.addAction('Run Backup Now')
+        self.run_now_action = actions_menu.addAction(self.tr('Run Backup Now'))
         self.run_now_action.setShortcut('F5')
         self.run_now_action.triggered.connect(self.backup_config.run_backup_now)
 
         # Help menu
-        help_menu = menubar.addMenu('Help')
+        help_menu = menubar.addMenu(self.tr('Help'))
 
-        about_action = help_menu.addAction('About')
+        about_action = help_menu.addAction(self.tr('About'))
         about_action.triggered.connect(self.show_about)
 
     def update_menu_state(self, has_profile: bool):

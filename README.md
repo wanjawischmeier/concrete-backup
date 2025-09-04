@@ -2,7 +2,7 @@
 
 # Concrete Backup
 
-A Python-based backup management tool with a PyQt5 GUI for creating and managing backup profiles. This is not an elegant or well maintained project! Just quickly vibe coded and thrown together in about a day.
+A Python-based backup management tool with a PyQt5 GUI for creating and managing backup profiles. This is not an elegant or well maintained project! Just quickly vibe coded and thrown together in a couple days.
 
 ## Requirements
 
@@ -80,6 +80,53 @@ concrete-backup/
 ## Credit
 App icon created by [juicy_fish - Flaticon](https://www.flaticon.com/free-icons/firewall).
 
+## Internationalization
+
+The application supports multiple languages using Qt's internationalization system. The interface automatically detects the system language and displays translations when available.
+
+### Available Languages
+
+- **German (de)**: Fully translated
+- **French (fr)**: Translation files available (needs translation)
+- **Spanish (es)**: Translation files available (needs translation)
+
+### Translation Workflow
+
+The project includes a translation management script to help with internationalization tasks:
+
+```bash
+# Extract translatable strings from source code
+python localization/manage_translations.py extract
+
+# Create a new translation file for a language
+python localization/manage_translations.py create <language_code>
+
+# Edit translations using Qt Linguist (if installed)
+python localization/manage_translations.py edit <language_code>
+
+# Compile translation files for the application
+python localization/manage_translations.py compile
+```
+
+### For Developers
+
+1. **Adding Translatable Strings**: Use `self.tr("Your text here")` in PyQt widgets
+2. **Extract Strings**: Run the extract command to update .ts files with new strings
+3. **Translate**: Edit the .ts files manually or use Qt Linguist
+4. **Compile**: Generate .qm files that the application loads at runtime
+
+### For Translators
+
+Translation files are located in `localization/translations/`:
+- `concrete_backup_de.ts` - German translations
+- `concrete_backup_fr.ts` - French translations  
+- `concrete_backup_es.ts` - Spanish translations
+
+To contribute translations:
+1. Edit the appropriate .ts file with your translations
+2. Run `python localization/manage_translations.py compile` to test
+3. Submit a pull request
+
 ## TODOs
 ### Fixes
 - [x] Centralized profile validation
@@ -88,4 +135,5 @@ App icon created by [juicy_fish - Flaticon](https://www.flaticon.com/free-icons/
 ### Features
 - [x] Improved bottom section layout
 - [ ] Profile creation wizard
+- [x] Internationalization support
 - [ ] On profile validation failed: Point to invalid field

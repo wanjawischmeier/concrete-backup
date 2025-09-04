@@ -100,6 +100,10 @@ def run_gui_application() -> int:
     app.setApplicationName("Concrete Backup")
     app.setStyle('Fusion')
 
+    # Initialize translation system
+    from localization import set_language
+    set_language()
+
     try:
         return start_main_window(app)
     except ImportError as e:
