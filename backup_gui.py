@@ -28,9 +28,7 @@ def check_privileges():
         msg.setText("Scheduling functionality is not available in the Snap version.")
         msg.setDetailedText(
             "The Snap version of Concrete Backup cannot access system scheduling "
-            "due to security restrictions. Please use the .deb package for full "
-            "functionality including backup scheduling.\n\n"
-            "You can download the .deb package from the GitHub releases page."
+            "due to security restrictions. Please download the .deb package from the GitHub releases page."
         )
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec_()
