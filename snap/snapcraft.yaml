@@ -1,18 +1,15 @@
 name: concrete-backup
 version: git
-summary: A simple and powerful backup solution
-description: |
-  Concrete Backup is a user-friendly backup application that helps you
-  backup your important files and directories with scheduling support
-  and multiple destination options.
+summary: Backup solution
+description: Backup application
 
 base: core24
 grade: stable
 confinement: strict
 
-platforms:
-  amd64:
-  arm64:
+architectures:
+  - build-on: amd64
+  - build-on: arm64
 
 apps:
   concrete-backup:
@@ -22,28 +19,19 @@ apps:
       - home
       - removable-media
       - network
-      - desktop
-      - desktop-legacy
-      - wayland
-      - x11
-      - unity7
-      - system-observe
       - mount-observe
-      - hardware-observe
+      - system-observe
 
 parts:
   concrete-backup:
     plugin: nil
     source: .
     override-build: |
-      # Install Poetry using the official installer (same as GitHub Actions)
       curl -sSL https://install.python-poetry.org | python3 -
       export PATH="/root/.local/bin:$PATH"
       
-      # Install dependencies using Poetry (including dev dependencies for PyInstaller)
       poetry install --no-interaction --with dev
       
-      # Build with PyInstaller (using poetry run, same as GitHub Actions)
       poetry run pyinstaller \
         --onefile \
         --name concrete-backup \
@@ -54,22 +42,19 @@ parts:
         --add-data="icon.png:." \
         backup_gui.py
       
-      # Copy the binary to the install directory
       mkdir -p $CRAFT_PART_INSTALL/bin/
       cp dist/concrete-backup $CRAFT_PART_INSTALL/bin/
       
-      # Copy icon first
       mkdir -p $CRAFT_PART_INSTALL/usr/share/pixmaps/
       cp icon.png $CRAFT_PART_INSTALL/usr/share/pixmaps/concrete-backup.png
       
-      # Copy the desktop file
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications/
       cat > $CRAFT_PART_INSTALL/usr/share/applications/concrete-backup.desktop << EOF
       [Desktop Entry]
       Name=Concrete Backup
       Comment=A simple backup solution
       Exec=concrete-backup
-      Icon=/usr/share/pixmaps/concrete-backup.png
+      Icon=concrete-backup
       Terminal=false
       Type=Application
       Categories=Utility;System;

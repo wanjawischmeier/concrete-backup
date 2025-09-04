@@ -15,6 +15,27 @@ from version import get_version
 
 def check_privileges():
     """Check if the application is running with root privileges."""
+    # Check if running in a snap environment
+    if os.environ.get('SNAP'):
+        # Show info dialog for snap users
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication(sys.argv)
+        
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Snap Version Not Available")
+        msg.setText("Scheduling functionality is not available in the Snap version.")
+        msg.setDetailedText(
+            "The Snap version of Concrete Backup cannot access system scheduling "
+            "due to security restrictions. Please use the .deb package for full "
+            "functionality including backup scheduling.\n\n"
+            "You can download the .deb package from the GitHub releases page."
+        )
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.exec_()
+        sys.exit(0)
+    
     if os.geteuid() != 0:
         print("Error: Concrete Backup requires root privileges to manage system backups.")
         print("Please run with sudo:")
