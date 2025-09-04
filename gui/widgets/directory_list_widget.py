@@ -32,10 +32,10 @@ class DirectoryListWidget(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
 
-        self.add_button = QPushButton("Add Directory")
+        self.add_button = QPushButton(self.tr("Add Directory"))
         buttons_layout.addWidget(self.add_button)
 
-        self.remove_button = QPushButton("Remove Selected")
+        self.remove_button = QPushButton(self.tr("Remove Selected"))
         buttons_layout.addWidget(self.remove_button)
 
         buttons_layout.addStretch()

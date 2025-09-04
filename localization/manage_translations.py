@@ -27,7 +27,10 @@ def extract_strings():
         python_files.extend(project_root.glob(pattern))
     
     # Extract tr() calls from Python files
-    tr_pattern = re.compile(r'self\.tr\([\'"]([^\'"]+)[\'"]\)')
+    tr_patterns = [
+        re.compile(r'self\.tr\([\'"]([^\'"]+)[\'"]\)'),
+        re.compile(r'QCoreApplication\.translate\([\'"][^\'"]+[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\)')
+    ]
     extracted_strings = set()
     
     for py_file in python_files:
@@ -37,9 +40,10 @@ def extract_strings():
         try:
             with open(py_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-                matches = tr_pattern.findall(content)
-                for match in matches:
-                    extracted_strings.add(match)
+                for pattern in tr_patterns:
+                    matches = pattern.findall(content)
+                    for match in matches:
+                        extracted_strings.add(match)
         except Exception as e:
             print(f"Error reading {py_file}: {e}")
     

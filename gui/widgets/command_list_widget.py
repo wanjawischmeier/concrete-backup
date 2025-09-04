@@ -33,15 +33,15 @@ class CommandListWidget(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
 
-        self.add_button = QPushButton("Add Command")
+        self.add_button = QPushButton(self.tr("Add Command"))
         self.add_button.clicked.connect(self.add_command)
         buttons_layout.addWidget(self.add_button)
 
-        self.edit_button = QPushButton("Edit Selected")
+        self.edit_button = QPushButton(self.tr("Edit Selected"))
         self.edit_button.clicked.connect(self.edit_command)
         buttons_layout.addWidget(self.edit_button)
 
-        self.remove_button = QPushButton("Remove Selected")
+        self.remove_button = QPushButton(self.tr("Remove Selected"))
         self.remove_button.clicked.connect(self.remove_command)
         buttons_layout.addWidget(self.remove_button)
 

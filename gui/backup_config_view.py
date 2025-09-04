@@ -80,11 +80,11 @@ class BackupConfigView(QWidget):
         self.custom_commands_tab = CustomCommandsTab(self)
         self.advanced_settings_tab = AdvancedSettingsTab(self)
 
-        self.tab_widget.addTab(self.sources_tab, "Sources")
-        self.tab_widget.addTab(self.destinations_tab, "Destinations")
-        self.tab_widget.addTab(self.schedule_tab, "Schedule")
-        self.tab_widget.addTab(self.custom_commands_tab, "Custom Commands")
-        self.tab_widget.addTab(self.advanced_settings_tab, "Advanced")
+        self.tab_widget.addTab(self.sources_tab, self.tr("Sources"))
+        self.tab_widget.addTab(self.destinations_tab, self.tr("Destinations"))
+        self.tab_widget.addTab(self.schedule_tab, self.tr("Schedule"))
+        self.tab_widget.addTab(self.custom_commands_tab, self.tr("Custom Commands"))
+        self.tab_widget.addTab(self.advanced_settings_tab, self.tr("Advanced"))
 
     def setup_controllers(self):
         """Setup the controllers."""

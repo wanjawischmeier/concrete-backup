@@ -24,14 +24,14 @@ class BackupProgressDialog(QDialog):
 
     def setup_ui(self):
         """Setup the dialog UI."""
-        self.setWindowTitle("Backup Progress")
+        self.setWindowTitle(self.tr("Backup Progress"))
         self.setModal(True)
         self.resize(600, 400)
 
         layout = QVBoxLayout(self)
 
         # Status label
-        self.status_label = QLabel("Preparing backup...")
+        self.status_label = QLabel(self.tr("Preparing backup..."))
         layout.addWidget(self.status_label)
 
         # Progress bar (indeterminate for now)
@@ -47,7 +47,7 @@ class BackupProgressDialog(QDialog):
         # Buttons
         button_layout = QHBoxLayout()
 
-        self.close_button = QPushButton("Close")
+        self.close_button = QPushButton(self.tr("Close"))
         self.close_button.clicked.connect(self.accept)
         self.close_button.setEnabled(False)  # Disabled until backup finishes
         button_layout.addWidget(self.close_button)
