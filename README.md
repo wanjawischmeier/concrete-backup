@@ -78,4 +78,4 @@ concrete-backup/
 - psutil: System information
 
 ## Credit
-App icon created by (juicy_fish - Flaticon)[https://www.flaticon.com/free-icons/firewall]
+App icon created by [juicy_fish - Flaticon](https://www.flaticon.com/free-icons/firewall).
