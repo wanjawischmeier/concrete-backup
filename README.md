@@ -79,3 +79,11 @@ concrete-backup/
 
 ## Credit
 App icon created by [juicy_fish - Flaticon](https://www.flaticon.com/free-icons/firewall).
+
+## TODOs
+### Fixes
+- [ ] General profile validation
+
+### Features
+- [ ] Profile creation wizard
+- [ ] On profile validation failed: Point to invalid field

@@ -27,6 +27,9 @@ class MainWindow(QMainWindow):
         # Status bar
         self.statusBar()
 
+        # Set initial menu state (no profile loaded initially)
+        self.update_menu_state(False)
+
     def create_menu_bar(self):
         """Create the application menu bar."""
         menubar = self.menuBar()
@@ -44,26 +47,33 @@ class MainWindow(QMainWindow):
         open_action.setShortcut('Ctrl+O')
         open_action.triggered.connect(self.backup_config.open_profile_file)
 
-        save_action = profile_menu.addAction('Save Profile')
-        save_action.setShortcut('Ctrl+S')
-        save_action.triggered.connect(self.backup_config.save_current_profile)
+        # Store references to actions that should be disabled when no profile is loaded
+        self.save_action = profile_menu.addAction('Save Profile')
+        self.save_action.setShortcut('Ctrl+S')
+        self.save_action.triggered.connect(self.backup_config.save_current_profile)
 
-        save_as_action = profile_menu.addAction('Save Profile As...')
-        save_as_action.setShortcut('Ctrl+Shift+S')
-        save_as_action.triggered.connect(self.backup_config.save_profile_as)
+        self.save_as_action = profile_menu.addAction('Save Profile As...')
+        self.save_as_action.setShortcut('Ctrl+Shift+S')
+        self.save_as_action.triggered.connect(self.backup_config.save_profile_as)
 
         # Actions menu
         actions_menu = menubar.addMenu('Actions')
 
-        run_now_action = actions_menu.addAction('Run Backup Now')
-        run_now_action.setShortcut('F5')
-        run_now_action.triggered.connect(self.backup_config.run_backup_now)
+        self.run_now_action = actions_menu.addAction('Run Backup Now')
+        self.run_now_action.setShortcut('F5')
+        self.run_now_action.triggered.connect(self.backup_config.run_backup_now)
 
         # Help menu
         help_menu = menubar.addMenu('Help')
 
         about_action = help_menu.addAction('About')
         about_action.triggered.connect(self.show_about)
+
+    def update_menu_state(self, has_profile: bool):
+        """Update the enabled state of menu actions based on whether a profile is loaded."""
+        self.save_action.setEnabled(has_profile)
+        self.save_as_action.setEnabled(has_profile)
+        self.run_now_action.setEnabled(has_profile)
 
     def show_about(self):
         """Show about dialog."""

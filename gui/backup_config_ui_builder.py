@@ -180,6 +180,11 @@ class BackupConfigUIBuilder:
                 QPushButton:hover {
                     background-color: #FF5252;
                 }
+                QPushButton:disabled {
+                    background-color: #cccccc;
+                    color: #666666;
+                    border: 2px solid #cccccc;
+                }
             """)
             button.setChecked(True)
         else:
@@ -195,6 +200,11 @@ class BackupConfigUIBuilder:
                 }
                 QPushButton:hover {
                     background-color: #1976D2;
+                }
+                QPushButton:disabled {
+                    background-color: #cccccc;
+                    color: #666666;
+                    border: 2px solid #cccccc;
                 }
             """)
             button.setChecked(False)

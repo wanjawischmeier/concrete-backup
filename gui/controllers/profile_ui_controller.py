@@ -50,7 +50,7 @@ class ProfileUIController:
         if self.profile_manager.create_new_profile():
             self.load_profile_to_ui()
             self.update_profile_display()
-            self.mark_clean()  # New profile starts clean
+            self.mark_dirty()  # New profile starts dirty since it hasn't been saved yet
             return True
         return False
 

@@ -59,12 +59,14 @@ class BackupConfigView(QWidget):
         self.dry_run_cb = ui_components['dry_run_cb']
         self.log_enabled_cb = ui_components['log_enabled_cb']
         self.run_now_btn = ui_components['run_now_btn']
+        self.save_profile_btn = ui_components['save_profile_btn']
+        self.save_as_profile_btn = ui_components['save_as_profile_btn']
 
         # Connect signals
         ui_components['new_profile_btn'].clicked.connect(self.create_new_profile)
         ui_components['open_profile_btn'].clicked.connect(self.open_profile_file)
-        ui_components['save_profile_btn'].clicked.connect(self.save_current_profile)
-        ui_components['save_as_profile_btn'].clicked.connect(self.save_profile_as)
+        self.save_profile_btn.clicked.connect(self.save_current_profile)
+        self.save_as_profile_btn.clicked.connect(self.save_profile_as)
         self.schedule_toggle_btn.clicked.connect(self.toggle_schedule_button)
         self.run_now_btn.clicked.connect(self.run_backup_now)
 
@@ -158,12 +160,29 @@ class BackupConfigView(QWidget):
         self.schedule_toggle_btn.setEnabled(has_profile)
         self.run_now_btn.setEnabled(has_profile)
 
+        # Enable/disable save buttons
+        self.save_profile_btn.setEnabled(has_profile)
+        self.save_as_profile_btn.setEnabled(has_profile)
+
         # Enable/disable tabs
         self.tab_widget.setEnabled(has_profile)
 
         # Enable/disable bottom checkboxes
         self.dry_run_cb.setEnabled(has_profile)
         self.log_enabled_cb.setEnabled(has_profile)
+
+        # Update schedule button styling to ensure disabled state is properly styled
+        if has_profile:
+            self.update_schedule_button_style()
+        else:
+            # When no profile is loaded, ensure the button is styled as disabled
+            from gui.backup_config_ui_builder import BackupConfigUIBuilder
+            BackupConfigUIBuilder.apply_schedule_button_style(self.schedule_toggle_btn, False)
+
+        # Update menu bar actions in the main window
+        main_window = self.window()
+        if hasattr(main_window, 'update_menu_state'):
+            main_window.update_menu_state(has_profile)
 
     # Schedule operations - delegate to main view controller
     def toggle_schedule_button(self):
