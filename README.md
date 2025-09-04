@@ -1,3 +1,5 @@
+[![concrete-backup](https://snapcraft.io/concrete-backup/badge.svg)](https://snapcraft.io/concrete-backup)
+
 # Concrete Backup
 
 A Python-based backup management tool with a PyQt5 GUI for creating and managing backup profiles. This is not an elegant or well maintained project! Just quickly vibe coded and thrown together in about a day.
