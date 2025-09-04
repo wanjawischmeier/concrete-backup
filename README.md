@@ -82,7 +82,7 @@ App icon created by [juicy_fish - Flaticon](https://www.flaticon.com/free-icons/
 
 ## TODOs
 ### Fixes
-- [ ] General profile validation
+- [x] Centralized profile validation
 
 ### Features
 - [ ] Profile creation wizard

@@ -140,23 +140,12 @@ class ProfileUIController:
 
     def _validate_and_update_profile(self, dry_run_enabled: bool, log_enabled: bool) -> bool:
         """Helper method to validate and update profile from UI."""
-        if not self.current_profile:
-            QMessageBox.warning(self.parent_widget, "Error", "No profile loaded!")
-            return False
+        # Update profile from UI first
+        if self.current_profile:
+            self.update_profile_from_ui(dry_run_enabled, log_enabled)
 
-        self.update_profile_from_ui(dry_run_enabled, log_enabled)
-
-        # Validate
-        errors = self.config_manager.validate_profile(self.current_profile)
-        if errors:
-            QMessageBox.warning(
-                self.parent_widget,
-                "Validation Error",
-                "Profile validation failed: " + ", ".join(errors)
-            )
-            return False
-
-        return True
+        # Use centralized validation with UI
+        return self.config_manager.validate_profile_with_ui(self.current_profile, self.parent_widget)
 
     def is_profile_saved(self) -> bool:
         """Check if the current profile has been saved."""

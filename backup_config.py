@@ -170,6 +170,42 @@ class BackupConfigManager:
 
         return errors
 
+    def validate_profile_with_ui(self, profile: Optional['BackupProfile'], parent_widget=None) -> bool:
+        """
+        Validate a backup profile and show UI message if validation fails.
+        
+        Args:
+            profile: The profile to validate (can be None)
+            parent_widget: Parent widget for message boxes (optional)
+            
+        Returns:
+            bool: True if validation passes, False otherwise
+        """
+        # Check if profile exists
+        if not profile:
+            if parent_widget:
+                from PyQt5.QtWidgets import QMessageBox
+                QMessageBox.warning(parent_widget, "No Profile", "No backup profile loaded!")
+            return False
+
+        # Validate profile content
+        errors = self.validate_profile(profile)
+        if errors:
+            if parent_widget:
+                from PyQt5.QtWidgets import QMessageBox
+                # Show user-friendly error message
+                if len(errors) == 1:
+                    error_message = errors[0]
+                else:
+                    error_message = "Multiple validation errors:\n• " + "\n• ".join(errors)
+                
+                QMessageBox.warning(
+                    parent_widget, "Profile Validation Error", error_message
+                )
+            return False
+
+        return True
+
     def _validate_basic_fields(self, profile: BackupProfile) -> List[str]:
         """Validate basic profile fields."""
         errors = []
@@ -177,9 +213,9 @@ class BackupConfigManager:
         if not profile.name:
             errors.append("Profile name is required")
         if not profile.sources:
-            errors.append("At least one source directory is required")
+            errors.append("No backup sources defined. Please add at least one source directory.")
         if not profile.destinations:
-            errors.append("At least one destination is required")
+            errors.append("No backup destinations defined. Please add at least one destination.")
 
         return errors
 
