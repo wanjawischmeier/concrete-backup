@@ -136,7 +136,7 @@ class ProfileUIController:
             display_name = self._truncate_text(display_name)
             self.profile_name_label.setText(display_name)
         else:
-            self.profile_name_label.setText("No profile loaded")
+            self.profile_name_label.setText(self.parent_widget.tr("No profile loaded"))
 
     def _validate_and_update_profile(self, dry_run_enabled: bool, log_enabled: bool) -> bool:
         """Helper method to validate and update profile from UI."""

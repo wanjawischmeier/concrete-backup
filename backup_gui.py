@@ -84,10 +84,10 @@ def handle_headless_test() -> int:
         print("✓ All GUI imports successful")
         return 0
     except ImportError as e:
-        print(f"✗ Import error: {e}")
+        print(f"Import error: {e}")
         return 1
     except Exception as e:
-        print(f"✗ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
         return 1
 
 
@@ -99,6 +99,10 @@ def run_gui_application() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName("Concrete Backup")
     app.setStyle('Fusion')
+
+    # Initialize translation system
+    from localization import set_language
+    set_language()
 
     try:
         return start_main_window(app)

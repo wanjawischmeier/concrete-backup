@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QTabWidget, QPushButton, QLabel,
     QCheckBox, QGroupBox, QWidget
 )
+from localization.tr import tr
 
 
 class BackupConfigUIBuilder:
@@ -21,7 +22,7 @@ class BackupConfigUIBuilder:
         # Create profile info section
         (profile_info_group, profile_name_label, schedule_mode_label,
          new_profile_btn, open_profile_btn, save_profile_btn, save_as_profile_btn) = (
-            BackupConfigUIBuilder.create_profile_info_section()
+            BackupConfigUIBuilder.create_profile_info_section(parent_widget)
         )
 
         layout.addWidget(profile_info_group)
@@ -32,7 +33,7 @@ class BackupConfigUIBuilder:
 
         # Create actions section
         (actions_layout, schedule_toggle_btn, run_now_btn) = (
-            BackupConfigUIBuilder.create_actions_section()
+            BackupConfigUIBuilder.create_actions_section(parent_widget)
         )
         layout.addLayout(actions_layout)
 
@@ -50,7 +51,7 @@ class BackupConfigUIBuilder:
         }
 
     @staticmethod
-    def create_profile_info_section():
+    def create_profile_info_section(parent_widget):
         """Create the profile information section."""
         profile_info_group = QGroupBox("")
         profile_info_group.setStyleSheet("QGroupBox { border: 2px solid #CCCCCC; }")
@@ -60,12 +61,12 @@ class BackupConfigUIBuilder:
         name_status_layout = QHBoxLayout()
 
         profile_name_container = QVBoxLayout()
-        profile_name_label = QLabel("No profile loaded")
+        profile_name_label = QLabel(tr("No profile loaded"))
         profile_name_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         profile_name_label.setWordWrap(False)
         profile_name_container.addWidget(profile_name_label)
 
-        schedule_mode_label = QLabel("Manual Mode")
+        schedule_mode_label = QLabel(tr("Manual Mode"))
         schedule_mode_label.setStyleSheet("font-size: 11px; color: #666;")
         schedule_mode_label.setWordWrap(False)
         profile_name_container.addWidget(schedule_mode_label)
@@ -75,10 +76,10 @@ class BackupConfigUIBuilder:
 
         # Profile buttons
         buttons_layout = QHBoxLayout()
-        new_profile_btn = QPushButton("New")
-        open_profile_btn = QPushButton("Open")
-        save_profile_btn = QPushButton("Save")
-        save_as_profile_btn = QPushButton("Save As")
+        new_profile_btn = QPushButton(tr("New"))
+        open_profile_btn = QPushButton(tr("Open"))
+        save_profile_btn = QPushButton(tr("Save"))
+        save_as_profile_btn = QPushButton(tr("Save As"))
 
         buttons_layout.addWidget(new_profile_btn)
         buttons_layout.addWidget(open_profile_btn)
@@ -93,7 +94,7 @@ class BackupConfigUIBuilder:
                 new_profile_btn, open_profile_btn, save_profile_btn, save_as_profile_btn)
 
     @staticmethod
-    def create_actions_section():
+    def create_actions_section(parent_widget):
         """Create the actions section with schedule and run buttons in a horizontal layout."""
         # Main actions layout - horizontal for buttons
         actions_layout = QHBoxLayout()
@@ -103,15 +104,15 @@ class BackupConfigUIBuilder:
         actions_layout.addStretch()
 
         # Schedule button on the left
-        schedule_toggle_btn = QPushButton("Enable Scheduling")
+        schedule_toggle_btn = QPushButton(tr("Enable Scheduling"))
         schedule_toggle_btn.setCheckable(True)
         schedule_toggle_btn.setMinimumHeight(45)
         schedule_toggle_btn.setMinimumWidth(160)
-        BackupConfigUIBuilder._apply_schedule_button_style(schedule_toggle_btn, enabled=False)
+        BackupConfigUIBuilder._apply_schedule_button_style(schedule_toggle_btn, enabled=False, parent_widget=parent_widget)
         actions_layout.addWidget(schedule_toggle_btn)
 
         # Run backup button on the right
-        run_now_btn = QPushButton("Run Backup Now")
+        run_now_btn = QPushButton(tr("Run Backup Now"))
         run_now_btn.setMinimumHeight(45)
         run_now_btn.setMinimumWidth(160)
         run_now_btn.setStyleSheet("""
@@ -142,10 +143,10 @@ class BackupConfigUIBuilder:
         return actions_layout, schedule_toggle_btn, run_now_btn
 
     @staticmethod
-    def _apply_schedule_button_style(button: QPushButton, enabled: bool):
+    def _apply_schedule_button_style(button: QPushButton, enabled: bool, parent_widget):
         """Apply styling to the schedule button based on enabled state."""
         if enabled:
-            button.setText("Disable Scheduling")
+            button.setText(tr("Disable Scheduling"))
             button.setStyleSheet("""
                 QPushButton {
                     background-color: #FF6B6B;
@@ -168,7 +169,7 @@ class BackupConfigUIBuilder:
             """)
             button.setChecked(True)
         else:
-            button.setText("Enable Scheduling")
+            button.setText(tr("Enable Scheduling"))
             button.setStyleSheet("""
                 QPushButton {
                     background-color: #2196F3;
@@ -192,6 +193,6 @@ class BackupConfigUIBuilder:
             button.setChecked(False)
 
     @staticmethod
-    def apply_schedule_button_style(button: QPushButton, enabled: bool):
+    def apply_schedule_button_style(button: QPushButton, enabled: bool, parent_widget):
         """Public method to apply schedule button styling."""
-        BackupConfigUIBuilder._apply_schedule_button_style(button, enabled)
+        BackupConfigUIBuilder._apply_schedule_button_style(button, enabled, parent_widget)
