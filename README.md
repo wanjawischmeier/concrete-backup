@@ -4,6 +4,27 @@
 
 A Python-based backup management tool with a PyQt5 GUI for creating and managing backup profiles. This is not an elegant or well maintained project! Just quickly vibe coded and thrown together in a couple days.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/1b5f87e2-0d1a-42b4-a960-6570abd5592d" alt="SourcesPageManual" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/539a5bfd-20e0-42ad-816a-4d47903b95ea" alt="DestinationsPageScheduled" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/ade9095e-90fa-48ef-b9aa-ea48907d0e70" alt="SchedulePageScheduled" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/123a1132-8685-4e2a-8a7a-18aab84aaff5" alt="CommandsPageScheduled" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/34c8a324-f780-459c-9460-9aa8cb014970" alt="RunningBackup" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/4926a58c-eba6-47a2-bad8-85cb0a1f06ee" alt="AboutDialog" width="400"/></td>
+  </tr>
+</table>
+
+
+
+
+
 ## Requirements
 
 - Python 3.12+
