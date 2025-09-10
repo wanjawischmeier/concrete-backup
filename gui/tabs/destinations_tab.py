@@ -12,6 +12,7 @@ from gui.widgets.drive_selection_widget import DriveSelectionWidget
 from gui.widgets.directory_list_widget import DirectoryListWidget
 from gui.widgets.directory_picker import EnhancedDirectoryPicker
 from managers.drive_manager import DriveManager
+from localization.tr import tr
 
 
 class DestinationsTab(QWidget):
@@ -48,7 +49,7 @@ class DestinationsTab(QWidget):
     def add_destination(self):
         """Add a destination with the selected drive and configuration."""
         if not self.parent_widget.current_profile:
-            QMessageBox.warning(self, "No Profile", "Please create or load a profile first.")
+            QMessageBox.warning(self, tr("No Profile"), tr("Please create or load a profile first."))
             return
 
         drive = self.current_drive

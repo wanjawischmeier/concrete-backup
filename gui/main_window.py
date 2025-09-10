@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
     def show_about(self):
         """Show about dialog."""
         version_info = get_version_info()
-        QMessageBox.about(self, "About Concrete Backup",
+        QMessageBox.about(self, self.tr("About Concrete Backup"),
                           f"{version_info['full_name']}\n\n"
                           "A comprehensive backup management system for Ubuntu.\n\n"
                           "App icon created by juicy_fish - Flaticon\n"
@@ -90,8 +90,8 @@ class MainWindow(QMainWindow):
         if self.backup_config.has_unsaved_changes():
             reply = QMessageBox.question(
                 self,
-                "Unsaved Changes",
-                "You have unsaved changes. Do you want to save before exiting?",
+                self.tr("Unsaved Changes"),
+                self.tr("You have unsaved changes. Do you want to save before exiting?"),
                 QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
                 QMessageBox.Save
             )

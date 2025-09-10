@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from backup_config import CustomCommand
+from localization.tr import tr
 
 
 class CommandListWidget(QWidget):
@@ -33,15 +34,15 @@ class CommandListWidget(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
 
-        self.add_button = QPushButton(self.tr("Add Command"))
+        self.add_button = QPushButton(tr("Add Command"))
         self.add_button.clicked.connect(self.add_command)
         buttons_layout.addWidget(self.add_button)
 
-        self.edit_button = QPushButton(self.tr("Edit Selected"))
+        self.edit_button = QPushButton(tr("Edit Selected"))
         self.edit_button.clicked.connect(self.edit_command)
         buttons_layout.addWidget(self.edit_button)
 
-        self.remove_button = QPushButton(self.tr("Remove Selected"))
+        self.remove_button = QPushButton(tr("Remove Selected"))
         self.remove_button.clicked.connect(self.remove_command)
         buttons_layout.addWidget(self.remove_button)
 
@@ -71,7 +72,7 @@ class CommandListWidget(QWidget):
         """Edit the selected command."""
         current_item = self.command_list.currentItem()
         if not current_item:
-            QMessageBox.information(self, "No Selection", "Please select a command to edit.")
+            QMessageBox.information(self, tr("No Selection"), tr("Please select a command to edit."))
             return
 
         current_cmd_obj = current_item.data(Qt.UserRole)
@@ -100,12 +101,12 @@ class CommandListWidget(QWidget):
         """Remove the selected command."""
         current_item = self.command_list.currentItem()
         if not current_item:
-            QMessageBox.information(self, "No Selection", "Please select a command to remove.")
+            QMessageBox.information(self, tr("No Selection"), tr("Please select a command to remove."))
             return
 
         reply = QMessageBox.question(
-            self, "Confirm Removal",
-            f"Remove command: {current_item.text()}?",
+            self, tr("Confirm Removal"),
+            tr("Remove command: {}?").format(current_item.text()),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )

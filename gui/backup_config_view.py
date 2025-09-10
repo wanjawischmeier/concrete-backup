@@ -13,6 +13,7 @@ from managers.cron_manager import CronManager
 from managers.schedule_status_manager import ScheduleStatusManager
 from gui.backup_config_ui_builder import BackupConfigUIBuilder
 from gui.controllers.main_view_controller import MainViewController
+from localization.tr import tr
 from gui.tabs.sources_tab import SourcesTab
 from gui.tabs.destinations_tab import DestinationsTab
 from gui.tabs.schedule_tab import ScheduleTab
@@ -80,11 +81,11 @@ class BackupConfigView(QWidget):
         self.custom_commands_tab = CustomCommandsTab(self)
         self.advanced_settings_tab = AdvancedSettingsTab(self)
 
-        self.tab_widget.addTab(self.sources_tab, self.tr("Sources"))
-        self.tab_widget.addTab(self.destinations_tab, self.tr("Destinations"))
-        self.tab_widget.addTab(self.schedule_tab, self.tr("Schedule"))
-        self.tab_widget.addTab(self.custom_commands_tab, self.tr("Custom Commands"))
-        self.tab_widget.addTab(self.advanced_settings_tab, self.tr("Advanced"))
+        self.tab_widget.addTab(self.sources_tab, tr("Sources"))
+        self.tab_widget.addTab(self.destinations_tab, tr("Destinations"))
+        self.tab_widget.addTab(self.schedule_tab, tr("Schedule"))
+        self.tab_widget.addTab(self.custom_commands_tab, tr("Custom Commands"))
+        self.tab_widget.addTab(self.advanced_settings_tab, tr("Advanced"))
 
     def setup_controllers(self):
         """Setup the controllers."""
@@ -180,7 +181,7 @@ class BackupConfigView(QWidget):
         else:
             # When no profile is loaded, ensure the button is styled as disabled
             from gui.backup_config_ui_builder import BackupConfigUIBuilder
-            BackupConfigUIBuilder.apply_schedule_button_style(self.schedule_toggle_btn, False)
+            BackupConfigUIBuilder.apply_schedule_button_style(self.schedule_toggle_btn, False, self)
 
         # Update menu bar actions in the main window
         main_window = self.window()
@@ -210,7 +211,7 @@ class BackupConfigView(QWidget):
                 # Enable scheduling - add cron job
                 success, message = self.cron_manager.add_backup_job(self.current_profile)
                 if not success:
-                    QMessageBox.warning(self, "Scheduling Error", f"Failed to schedule backup: {message}")
+                    QMessageBox.warning(self, tr("Scheduling Error"), f"Failed to schedule backup: {message}")
                     self.schedule_toggle_btn.setChecked(False)
                     self.current_profile.schedule.enabled = False
             else:
@@ -225,7 +226,7 @@ class BackupConfigView(QWidget):
     def update_schedule_button_style(self):
         """Update the schedule button appearance based on state."""
         enabled = self.schedule_status_manager.is_schedule_active(self.current_profile)
-        BackupConfigUIBuilder.apply_schedule_button_style(self.schedule_toggle_btn, enabled)
+        BackupConfigUIBuilder.apply_schedule_button_style(self.schedule_toggle_btn, enabled, self)
 
     def update_schedule_status(self):
         """Update the schedule status display in the main view."""

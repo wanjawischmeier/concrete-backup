@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import pyqtSignal
 
 from managers.drive_manager import DriveManager
+from localization.tr import tr
 
 
 class DriveSelectionWidget(QWidget):
@@ -34,25 +35,25 @@ class DriveSelectionWidget(QWidget):
 
         # Drive selection
         drive_selection_layout = QHBoxLayout()
-        drive_selection_layout.addWidget(QLabel(self.tr("Select Drive:")))
+        drive_selection_layout.addWidget(QLabel(tr("Select Drive:")))
 
         self.drive_combo = QComboBox()
         self.drive_combo.currentTextChanged.connect(self.on_drive_selected)
         drive_selection_layout.addWidget(self.drive_combo)
 
-        refresh_drives_btn = QPushButton(self.tr("Refresh Drives"))
+        refresh_drives_btn = QPushButton(tr("Refresh Drives"))
         refresh_drives_btn.clicked.connect(self.refresh_drives)
         drive_selection_layout.addWidget(refresh_drives_btn)
 
         drive_layout.addLayout(drive_selection_layout)
 
         # Drive info
-        self.drive_info_label = QLabel(self.tr("No drive selected"))
+        self.drive_info_label = QLabel(tr("No drive selected"))
         drive_layout.addWidget(self.drive_info_label)
 
         # Auto-mount checkbox (only for destinations)
         if self.show_auto_mount:
-            self.auto_mount_cb = QCheckBox(self.tr("Auto-mount drive before backup"))
+            self.auto_mount_cb = QCheckBox(tr("Auto-mount drive before backup"))
             drive_layout.addWidget(self.auto_mount_cb)
 
         layout.addWidget(drive_group)

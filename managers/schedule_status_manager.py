@@ -6,6 +6,7 @@ Centralizes schedule status logic to avoid duplication.
 
 from typing import Optional, Tuple
 from backup_config import BackupProfile
+from localization.tr import tr
 from managers.cron_manager import CronManager
 
 
@@ -31,14 +32,14 @@ class ScheduleStatusManager:
             Tuple of (display_text, css_color)
         """
         if not profile:
-            return "Manual Mode", "#666"
+            return tr("Manual Mode"), "#666"
 
         if self.is_schedule_active(profile):
             time_str = f"{profile.schedule.hour:02d}:{profile.schedule.minute:02d}"
             days_text = self._format_days(profile.schedule.days_of_week)
-            return f"Scheduled Mode - {time_str} {days_text}", "#007ACC"
+            return f"{tr('Scheduled Mode')} - {time_str} {days_text}", "#007ACC"
         else:
-            return "Manual Mode", "#666"
+            return tr("Manual Mode"), "#666"
 
     def _format_days(self, days_of_week: list) -> str:
         """Format days of week for display."""

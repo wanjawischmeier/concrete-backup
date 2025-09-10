@@ -7,6 +7,10 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>About Concrete Backup</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Actions</source>
             <translation type="unfinished" />
         </message>
@@ -23,6 +27,10 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Authentication Failed</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Auto-mount drive before backup</source>
             <translation type="unfinished" />
         </message>
@@ -31,7 +39,15 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Backup Running</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Backup Schedule</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Backup is still running. Are you sure you want to close?</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -40,6 +56,10 @@
         </message>
         <message>
             <source>Concrete Backup</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Confirm Removal</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -91,6 +111,10 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Incorrect password. Please try again.</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Manual Mode</source>
             <translation type="unfinished" />
         </message>
@@ -100,6 +124,14 @@
         </message>
         <message>
             <source>New Profile</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>No Profile</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>No Selection</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -115,11 +147,27 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Not scheduled</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Open</source>
             <translation type="unfinished" />
         </message>
         <message>
             <source>Open Profile...</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Please create or load a profile first.</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Please select a command to edit.</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Please select a command to remove.</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -136,6 +184,10 @@
         </message>
         <message>
             <source>Remove Selected</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Remove command: {}?</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -167,6 +219,10 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Scheduling Error</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Select Drive:</source>
             <translation type="unfinished" />
         </message>
@@ -176,6 +232,14 @@
         </message>
         <message>
             <source>Time:</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Unsaved Changes</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>You have unsaved changes. Do you want to save before exiting?</source>
             <translation type="unfinished" />
         </message>
     </context>

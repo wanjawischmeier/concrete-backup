@@ -29,7 +29,8 @@ def extract_strings():
     # Extract tr() calls from Python files
     tr_patterns = [
         re.compile(r'self\.tr\([\'"]([^\'"]+)[\'"]\)'),
-        re.compile(r'QCoreApplication\.translate\([\'"][^\'"]+[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\)')
+        re.compile(r'QCoreApplication\.translate\([\'"][^\'"]+[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\)'),
+        re.compile(r'\btr\([\'"]([^\'"]+)[\'"]\)')
     ]
     extracted_strings = set()
     

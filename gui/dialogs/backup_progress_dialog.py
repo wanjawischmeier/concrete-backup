@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 )
 from workers.backup_worker import BackupWorker
 from backup_config import BackupProfile
+from localization.tr import tr
 
 
 class BackupProgressDialog(QDialog):
@@ -24,14 +25,14 @@ class BackupProgressDialog(QDialog):
 
     def setup_ui(self):
         """Setup the dialog UI."""
-        self.setWindowTitle(self.tr("Backup Progress"))
+        self.setWindowTitle(tr("Backup Progress"))
         self.setModal(True)
         self.resize(600, 400)
 
         layout = QVBoxLayout(self)
 
         # Status label
-        self.status_label = QLabel(self.tr("Preparing backup..."))
+        self.status_label = QLabel(tr("Preparing backup..."))
         layout.addWidget(self.status_label)
 
         # Progress bar (indeterminate for now)
@@ -47,7 +48,7 @@ class BackupProgressDialog(QDialog):
         # Buttons
         button_layout = QHBoxLayout()
 
-        self.close_button = QPushButton(self.tr("Close"))
+        self.close_button = QPushButton(tr("Close"))
         self.close_button.clicked.connect(self.accept)
         self.close_button.setEnabled(False)  # Disabled until backup finishes
         button_layout.addWidget(self.close_button)
@@ -105,8 +106,8 @@ class BackupProgressDialog(QDialog):
     def closeEvent(self, event):
         """Handle dialog close event."""
         if self.worker and self.worker.isRunning():
-            reply = QMessageBox.question(self, "Backup Running",
-                                         "Backup is still running. Are you sure you want to close?",
+            reply = QMessageBox.question(self, tr("Backup Running"),
+                                         tr("Backup is still running. Are you sure you want to close?"),
                                          QMessageBox.Yes | QMessageBox.No,
                                          QMessageBox.No)
 

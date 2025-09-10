@@ -222,7 +222,7 @@ class BackupEngine:
             if dest_success:
                 print(f"✓ {message}")
             else:
-                print(f"✗ {message}")
+                print(f"{message}")
                 success = False
 
         # Cleanup: unmount drives we mounted

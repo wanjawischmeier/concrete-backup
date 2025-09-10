@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QCoreApplication
 
 from backup_config import BackupProfile
+from localization.tr import tr
 
 
 class AdvancedSettingsTab(QWidget):
@@ -25,17 +26,17 @@ class AdvancedSettingsTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Execution Options Group
-        execution_group = QGroupBox(self.tr("Execution Options"))
+        execution_group = QGroupBox(tr("Execution Options"))
         execution_layout = QVBoxLayout(execution_group)
 
         # Dry Run checkbox
-        self.dry_run_cb = QCheckBox(self.tr("Dry Run"))
+        self.dry_run_cb = QCheckBox(tr("Dry Run"))
         self.dry_run_cb.setToolTip("Test mode - shows what would be backed up without actually copying files")
         self.dry_run_cb.stateChanged.connect(self.on_setting_changed)
         execution_layout.addWidget(self.dry_run_cb)
 
         # Logging checkbox
-        self.log_enabled_cb = QCheckBox(self.tr("Enable Logging"))
+        self.log_enabled_cb = QCheckBox(tr("Enable Logging"))
         self.log_enabled_cb.setChecked(True)
         self.log_enabled_cb.setToolTip("Save backup operations to log files")
         self.log_enabled_cb.stateChanged.connect(self.on_setting_changed)

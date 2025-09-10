@@ -89,7 +89,7 @@ class ScheduleUIController:
             job_status = self.cron_manager.get_backup_job_status()
             self.schedule_status_label.setText(f"✓ Scheduled: {job_status}")
         else:
-            self.schedule_status_label.setText("✗ Not scheduled")
+            self.schedule_status_label.setText(self.parent_widget.tr("Not scheduled"))
 
     def load_schedule_from_profile(self, profile: BackupProfile):
         """Load schedule settings from profile."""

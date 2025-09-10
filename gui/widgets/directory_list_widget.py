@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QGroupBox, QListWidget, QListWidgetItem
 )
 from PyQt5.QtCore import Qt
+from localization.tr import tr
 
 
 class DirectoryListWidget(QWidget):
@@ -32,10 +33,10 @@ class DirectoryListWidget(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
 
-        self.add_button = QPushButton(self.tr("Add Directory"))
+        self.add_button = QPushButton(tr("Add Directory"))
         buttons_layout.addWidget(self.add_button)
 
-        self.remove_button = QPushButton(self.tr("Remove Selected"))
+        self.remove_button = QPushButton(tr("Remove Selected"))
         buttons_layout.addWidget(self.remove_button)
 
         buttons_layout.addStretch()

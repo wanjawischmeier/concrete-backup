@@ -74,7 +74,7 @@ class SudoHelper:
                 return True, message
 
             if attempt < max_retries - 1:
-                QMessageBox.warning(parent, "Authentication Failed", "Incorrect password. Please try again.")
+                QMessageBox.warning(parent, parent.tr("Authentication Failed"), parent.tr("Incorrect password. Please try again."))
 
         return False, "Authentication failed after maximum attempts"
 
