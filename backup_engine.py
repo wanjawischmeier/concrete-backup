@@ -60,25 +60,6 @@ class BackupEngine:
 
         return logger
 
-    def mount_drive(self, destination: BackupDestination) -> tuple[bool, str]:
-        """Mount a drive if needed using DriveManager."""
-        if not destination.auto_mount:
-            return True, "Auto-mount disabled"
-
-        success, message = self.drive_manager.mount_drive(
-            destination.drive_device,
-            destination.mount_point
-        )
-
-        if success:
-            self.mounted_drives.append(destination.drive_device)
-
-        return success, message
-
-    def unmount_drive(self, drive_device: str) -> bool:
-        """Unmount a drive using DriveManager."""
-        return self.drive_manager.unmount_drive(drive_device)
-
     def run_custom_commands(self, commands: List, phase: str, logger: logging.Logger) -> bool:
         """Run custom commands (pre or post backup)."""
         logger.info(f"Running {phase} commands...")
@@ -187,15 +168,13 @@ class BackupEngine:
                     logger.info(f"  {line}")
 
     def run_backup(self, profile: BackupProfile = None) -> bool:
-        """Execute the complete backup process for all destinations."""
+        """Execute the complete backup process: pre-commands → destinations → post-commands."""
         if profile is None:
             profile = self.profile
 
         if not profile:
             print("No profile provided")
             return False
-
-        success = True
 
         # Validate profile
         config_manager = BackupConfigManager()
@@ -208,80 +187,122 @@ class BackupEngine:
 
         print(f"Starting backup for profile: {profile.name}")
 
-        # Process each destination using the single-destination method
+        # Setup logging (use first enabled destination or temp directory)
+        log_dir = self._get_log_directory(profile)
+        logger = self.setup_logging(log_dir)
+        
+        # 1. Run pre-backup commands
+        if not self.run_custom_commands(profile.pre_commands, "pre-backup", logger):
+            print("Pre-backup commands failed")
+            return False
+
+        # 2. Process all destinations
+        destinations_success = self._process_all_destinations(profile)
+
+        # 3. Run post-backup commands (always run if pre-commands succeeded)
+        if not self.run_custom_commands(profile.post_commands, "post-backup", logger):
+            print("Post-backup commands failed")
+            destinations_success = False
+
+        # 4. Cleanup mounted drives
+        self._cleanup_mounted_drives()
+
+        return destinations_success
+
+    def run_backup_to_destination(self, destination: BackupDestination, profile: BackupProfile = None) -> Tuple[bool, str]:
+        """Run backup to a specific destination (files only, no custom commands)."""
+        if profile is None:
+            profile = self.profile
+
+        if not profile:
+            return False, "No profile provided"
+
+        if not destination.enabled:
+            return False, "Destination is disabled"
+
+        try:
+            # Setup destination (mounting, directory creation)
+            setup_success, setup_msg = self._setup_destination(destination)
+            if not setup_success:
+                return False, setup_msg
+
+            # Setup logging and backup all sources
+            logger = self.setup_logging(destination.target_path)
+            logger.info(f"Starting backup to {destination.target_path}")
+            logger.info(f"Profile: {profile.name}")
+            logger.info(f"Sources: {len(profile.sources)} directories")
+
+            # Backup all sources to this destination
+            success, failed_sources = self._backup_all_sources(destination, logger, profile)
+
+            if success:
+                logger.info("Backup completed successfully for this destination")
+                return True, "Backup completed successfully"
+            else:
+                logger.error(f"Backup failed for sources: {', '.join(failed_sources)}")
+                return False, f"Failed to backup sources: {', '.join(failed_sources)}"
+
+        except (OSError, subprocess.SubprocessError, PermissionError, KeyboardInterrupt) as e:
+            return False, f"Backup error: {str(e)}"
+        except Exception as e:
+            return False, f"Unexpected error during backup: {str(e)}"
+
+    def _get_log_directory(self, profile: BackupProfile) -> str:
+        """Get directory for profile-level logging."""
+        # Use first enabled destination for logging, otherwise temp directory
+        for dest in profile.destinations:
+            if dest.enabled:
+                return dest.target_path
+        
+        import tempfile
+        return tempfile.gettempdir()
+
+    def _process_all_destinations(self, profile: BackupProfile) -> bool:
+        """Process all enabled destinations."""
+        success = True
+        destinations_processed = 0
+
         for dest_idx, destination in enumerate(profile.destinations):
             if not destination.enabled:
                 print(f"Skipping disabled destination {dest_idx + 1}")
                 continue
 
+            destinations_processed += 1
             print(f"\nProcessing destination {dest_idx + 1}: {destination.target_path}")
 
-            # Use the single-destination backup method with the profile
             dest_success, message = self.run_backup_to_destination(destination, profile)
-
+            
             if dest_success:
                 print(f"✓ {message}")
             else:
-                print(f"{message}")
+                print(f"✗ {message}")
                 success = False
 
-        # Cleanup: unmount drives we mounted
-        for drive in self.mounted_drives:
-            print(f"Unmounting {drive}...")
-            if self.unmount_drive(drive):
-                print(f"Successfully unmounted {drive}")
-            else:
-                print(f"Failed to unmount {drive}")
-                success = False
+        if destinations_processed == 0:
+            print("No destinations to process - only running custom commands")
 
         return success
 
-    def run_backup_to_destination(self, destination: BackupDestination, profile: BackupProfile = None) -> Tuple[bool, str]:
-        """
-        Run backup to a specific destination.
-
-        Args:
-            destination: The backup destination to run backup to
-
-        Returns:
-            Tuple of (success, message)
-        """
-        try:
-            # Use the provided profile or fallback to instance profile
-            if profile is None:
-                profile = self.profile
-
-            if not profile:
-                return False, "No profile provided"
-
-            # Pre-flight checks
-            if not destination.enabled:
-                return False, "Destination is disabled"
-
-            # Setup destination
-            setup_success, setup_msg = self._setup_destination(destination)
-            if not setup_success:
-                return False, setup_msg
-
-            # Setup logging and execute backup
-            logger = self.setup_logging(destination.target_path)
-            self._log_backup_start(logger, destination, profile)
-
-            # Execute backup workflow
-            return self._execute_backup_workflow(destination, logger, profile)
-
-        except (OSError, subprocess.SubprocessError, PermissionError, KeyboardInterrupt) as e:
-            return self._handle_backup_error(e)
-        except Exception as e:
-            return self._handle_unexpected_error(e)
+    def _cleanup_mounted_drives(self):
+        """Unmount all drives we mounted during backup."""
+        for drive in self.mounted_drives:
+            print(f"Unmounting {drive}...")
+            if self.drive_manager.unmount_drive(drive):
+                print(f"Successfully unmounted {drive}")
+            else:
+                print(f"Failed to unmount {drive}")
 
     def _setup_destination(self, destination: BackupDestination) -> Tuple[bool, str]:
         """Setup destination for backup (mounting, directory creation)."""
         # Mount drive if needed
         if destination.auto_mount and destination.drive_device:
-            mount_success, mount_msg = self.mount_drive(destination)
-            if not mount_success:
-                return False, f"Failed to mount drive: {mount_msg}"
+            success, message = self.drive_manager.mount_drive(
+                destination.drive_device, 
+                destination.mount_point
+            )
+            if not success:
+                return False, f"Failed to mount drive: {message}"
+            self.mounted_drives.append(destination.drive_device)
 
         # Ensure target directory exists
         try:
@@ -289,36 +310,6 @@ class BackupEngine:
             return True, "Destination setup successful"
         except (OSError, PermissionError) as e:
             return False, f"Failed to create target directory: {str(e)}"
-
-    def _log_backup_start(self, logger: logging.Logger, destination: BackupDestination, profile: BackupProfile) -> None:
-        """Log backup start information."""
-        logger.info(f"Starting backup to {destination.target_path}")
-        logger.info(f"Profile: {profile.name}")
-        logger.info(f"Sources: {len(profile.sources)} directories")
-
-    def _execute_backup_workflow(self, destination: BackupDestination,
-                                 logger: logging.Logger,
-                                 profile: BackupProfile) -> Tuple[bool, str]:
-        """Execute the complete backup workflow."""
-        # Run pre-backup commands
-        if not self.run_custom_commands(profile.pre_commands, "pre-backup", logger):
-            logger.error("Pre-backup commands failed")
-            return False, "Pre-backup commands failed"
-
-        # Backup each source
-        success, failed_sources = self._backup_all_sources(destination, logger, profile)
-
-        # Run post-backup commands only if sources succeeded
-        if success:
-            if not self.run_custom_commands(profile.post_commands, "post-backup", logger):
-                logger.error("Post-backup commands failed")
-                return False, "Post-backup commands failed"
-
-            logger.info("Backup completed successfully for this destination")
-            return True, "Backup completed successfully"
-        else:
-            logger.error(f"Backup failed for sources: {', '.join(failed_sources)}")
-            return False, f"Failed to backup sources: {', '.join(failed_sources)}"
 
     def _backup_all_sources(self, destination: BackupDestination,
                             logger: logging.Logger,
@@ -336,21 +327,6 @@ class BackupEngine:
 
         success = len(failed_sources) == 0
         return success, failed_sources
-
-    def _handle_backup_error(self, e: Exception) -> Tuple[bool, str]:
-        """Handle expected backup errors."""
-        error_msg = f"Backup error: {str(e)}"
-        if hasattr(self, 'logger') and self.logger:
-            self.logger.error(error_msg)
-        return False, error_msg
-
-    def _handle_unexpected_error(self, e: Exception) -> Tuple[bool, str]:
-        """Handle unexpected backup errors."""
-        error_msg = f"Unexpected error during backup: {str(e)}"
-        if hasattr(self, 'logger') and self.logger:
-            self.logger.error(error_msg)
-            self.logger.exception("Full traceback:")
-        return False, error_msg
 
 
 def main():

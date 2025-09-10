@@ -19,6 +19,7 @@
     - Various other things, this is an incomplete list
 - [x] Seperate about dialog
 - [x] Remove unnecessary progile verification conditions
+- [x] Fix commands not ran if destinations empty
 
 ## Features
 - [x] Improved bottom section layout
