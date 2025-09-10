@@ -31,9 +31,9 @@ class ProfileUIController:
         # Track if profile has unsaved changes
         self.is_dirty = False
 
-    def register_tabs(self, sources_tab, destinations_tab, schedule_tab, custom_commands_tab):
+    def register_tabs(self, tabs_list):
         """Register the tabs that need profile updates."""
-        self.tabs = [sources_tab, destinations_tab, schedule_tab, custom_commands_tab]
+        self.tabs = tabs_list
 
     @property
     def current_profile(self) -> Optional[BackupProfile]:
@@ -50,7 +50,7 @@ class ProfileUIController:
         if self.profile_manager.create_new_profile():
             self.load_profile_to_ui()
             self.update_profile_display()
-            self.mark_clean()  # New profile starts clean
+            self.mark_dirty()  # New profile starts dirty since it hasn't been saved yet
             return True
         return False
 
@@ -136,27 +136,16 @@ class ProfileUIController:
             display_name = self._truncate_text(display_name)
             self.profile_name_label.setText(display_name)
         else:
-            self.profile_name_label.setText("No profile loaded")
+            self.profile_name_label.setText(self.parent_widget.tr("No profile loaded"))
 
     def _validate_and_update_profile(self, dry_run_enabled: bool, log_enabled: bool) -> bool:
         """Helper method to validate and update profile from UI."""
-        if not self.current_profile:
-            QMessageBox.warning(self.parent_widget, "Error", "No profile loaded!")
-            return False
+        # Update profile from UI first
+        if self.current_profile:
+            self.update_profile_from_ui(dry_run_enabled, log_enabled)
 
-        self.update_profile_from_ui(dry_run_enabled, log_enabled)
-
-        # Validate
-        errors = self.config_manager.validate_profile(self.current_profile)
-        if errors:
-            QMessageBox.warning(
-                self.parent_widget,
-                "Validation Error",
-                "Profile validation failed: " + ", ".join(errors)
-            )
-            return False
-
-        return True
+        # Use centralized validation with UI
+        return self.config_manager.validate_profile_with_ui(self.current_profile, self.parent_widget)
 
     def is_profile_saved(self) -> bool:
         """Check if the current profile has been saved."""

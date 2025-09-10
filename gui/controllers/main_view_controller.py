@@ -7,7 +7,7 @@ Handles the main view operations and coordination.
 from typing import Optional
 from PyQt5.QtWidgets import QMessageBox
 
-from backup_config import BackupProfile
+from backup_config import BackupProfile, BackupConfigManager
 from managers.schedule_status_manager import ScheduleStatusManager
 from gui.dialogs.backup_progress_dialog import BackupProgressDialog
 
@@ -18,28 +18,11 @@ class MainViewController:
     def __init__(self, parent_widget, schedule_status_manager: ScheduleStatusManager):
         self.parent_widget = parent_widget
         self.schedule_status_manager = schedule_status_manager
+        self.config_manager = BackupConfigManager()
 
     def validate_profile_for_backup(self, profile: Optional[BackupProfile]) -> bool:
         """Validate if the profile is ready for backup."""
-        if not profile:
-            QMessageBox.warning(self.parent_widget, "No Profile", "No backup profile loaded!")
-            return False
-
-        if not profile.sources:
-            QMessageBox.warning(
-                self.parent_widget, "No Sources",
-                "No backup sources defined. Please add at least one source directory."
-            )
-            return False
-
-        if not profile.destinations:
-            QMessageBox.warning(
-                self.parent_widget, "No Destinations",
-                "No backup destinations defined. Please add at least one destination."
-            )
-            return False
-
-        return True
+        return self.config_manager.validate_profile_with_ui(profile, self.parent_widget)
 
     def update_schedule_display(self, profile: Optional[BackupProfile],
                                 schedule_mode_label, profile_info_group, truncate_text_func):

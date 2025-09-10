@@ -11,6 +11,7 @@ from PyQt5.QtCore import Qt, QTime
 
 from backup_config import BackupProfile
 from managers.cron_manager import CronManager
+from localization.tr import tr
 
 
 class ScheduleTab(QWidget):
@@ -27,18 +28,18 @@ class ScheduleTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Schedule settings
-        schedule_group = QGroupBox("Backup Schedule")
+        schedule_group = QGroupBox(tr("Backup Schedule"))
         schedule_layout = QGridLayout(schedule_group)
 
         # Time
-        schedule_layout.addWidget(QLabel("Time:"), 0, 0)
+        schedule_layout.addWidget(QLabel(tr("Time:")), 0, 0)
         self.schedule_time = QTimeEdit()
         self.schedule_time.setTime(QTime(2, 0))  # 2:00 AM default
         self.schedule_time.timeChanged.connect(self.on_schedule_changed)
         schedule_layout.addWidget(self.schedule_time, 0, 1)
 
         # Days of week
-        schedule_layout.addWidget(QLabel("Days:"), 1, 0)
+        schedule_layout.addWidget(QLabel(tr("Days:")), 1, 0)
 
         days_widget = QWidget()
         days_layout = QHBoxLayout(days_widget)
@@ -57,7 +58,7 @@ class ScheduleTab(QWidget):
         schedule_layout.addWidget(days_widget, 1, 1)
 
         # Daily/Custom toggle
-        self.daily_cb = QCheckBox("Daily backup")
+        self.daily_cb = QCheckBox(tr("Daily backup"))
         self.daily_cb.setChecked(True)
         self.daily_cb.stateChanged.connect(self.toggle_daily_backup)
         schedule_layout.addWidget(self.daily_cb, 2, 0, 1, 2)
@@ -65,10 +66,10 @@ class ScheduleTab(QWidget):
         layout.addWidget(schedule_group)
 
         # Current status
-        status_group = QGroupBox("Current Schedule Status")
+        status_group = QGroupBox(tr("Current Schedule Status"))
         status_layout = QVBoxLayout(status_group)
 
-        self.cron_status_label = QLabel("No backup scheduled")
+        self.cron_status_label = QLabel(tr("No backup scheduled"))
         self.cron_status_label.setWordWrap(True)
         self.cron_status_label.setMinimumHeight(60)  # Reserve space for multiple lines
         self.cron_status_label.setMaximumHeight(80)  # Limit height to prevent resizing
@@ -160,12 +161,12 @@ class ScheduleTab(QWidget):
         if (not self.parent_widget
                 or not hasattr(self.parent_widget, 'current_profile')
                 or not self.parent_widget.current_profile):
-            self.cron_status_label.setText("No profile loaded")
+            self.cron_status_label.setText(tr("No profile loaded"))
             return
 
         # Check if schedule is enabled
         if not self.parent_widget.current_profile.schedule.enabled:
-            self.cron_status_label.setText("Schedule disabled")
+            self.cron_status_label.setText(tr("Schedule disabled"))
             return
 
         # Get current schedule info from profile (not UI state)
