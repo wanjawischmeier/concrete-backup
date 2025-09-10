@@ -332,13 +332,22 @@ class BackupEngine:
 def main():
     """Command-line entry point for backup engine."""
     if len(sys.argv) != 2:
-        print("Usage: backup_engine.py <profile_name>")
+        print("Usage: backup_engine.py <profile_file_path>")
         sys.exit(1)
 
-    profile_name = sys.argv[1]
+    profile_file_path = sys.argv[1]
 
     try:
-        engine = BackupEngine(profile_name)
+        # Load the profile from file path
+        from backup_config import BackupConfigManager
+        config_manager = BackupConfigManager()
+        
+        profile = config_manager.load_profile_from_file(profile_file_path)
+        if not profile:
+            print(f"Error: Could not load profile from file '{profile_file_path}'")
+            sys.exit(1)
+
+        engine = BackupEngine(profile)
         success = engine.run_backup()
 
         if success:

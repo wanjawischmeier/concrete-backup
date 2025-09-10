@@ -24,20 +24,6 @@ class ScheduleUIController:
         # Connect signals - QPushButton uses toggled signal instead of stateChanged
         self.schedule_toggle_btn.toggled.connect(self.toggle_schedule)
 
-    def on_schedule_changed(self, profile: BackupProfile, old_schedule):
-        """Handle schedule changes."""
-        # Update the cron job if the schedule changed
-        if old_schedule != profile.schedule:
-            if self.cron_manager.remove_backup_jobs():
-                success, message = self.cron_manager.add_backup_job(profile)
-                if not success and "cancelled" not in message.lower():
-                    # Only show warning for non-cancellation errors
-                    QMessageBox.warning(
-                        self.parent_widget,
-                        "Schedule Update Error",
-                        f"Failed to update schedule: {message}"
-                    )
-
     def toggle_schedule(self, checked):
         """Toggle schedule enabled/disabled."""
         # This method will be connected to from the main widget

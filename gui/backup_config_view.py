@@ -209,7 +209,8 @@ class BackupConfigView(QWidget):
 
             if is_enabled:
                 # Enable scheduling - add cron job
-                success, message = self.cron_manager.add_backup_job(self.current_profile)
+                profile_path = self.profile_controller.get_current_profile_path()
+                success, message = self.cron_manager.add_backup_job(self.current_profile, profile_path)
                 if not success:
                     QMessageBox.warning(self, tr("Scheduling Error"), f"Failed to schedule backup: {message}")
                     self.schedule_toggle_btn.setChecked(False)

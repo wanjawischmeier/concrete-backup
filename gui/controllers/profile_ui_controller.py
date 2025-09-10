@@ -151,6 +151,10 @@ class ProfileUIController:
         """Check if the current profile has been saved."""
         return self.profile_manager.is_profile_saved()
 
+    def get_current_profile_path(self) -> Optional[str]:
+        """Get the current profile file path."""
+        return self.profile_manager.get_profile_path()
+
     def has_profile(self) -> bool:
         """Check if there is a current profile."""
         return self.profile_manager.has_profile()

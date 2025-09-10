@@ -45,7 +45,7 @@ class CronManager:
 
         return f"{minute} {hour} * * {day_of_week}"
 
-    def create_backup_script(self, profile_name: str) -> str:
+    def create_backup_script(self, profile_name: str, profile_file_path: str) -> str:
         """Create a shell script that runs the backup with proper environment."""
         script_dir = Path.home() / ".config" / "concrete-backup" / "scripts"
         script_dir.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,7 @@ echo "$(date): Starting backup for profile '{profile_name}'" >> "$LOG_FILE"
 cd "{Path(__file__).parent.absolute()}"
 
 # Activate poetry environment and run backup
-if poetry run python "{engine_path}" "{profile_name}"; then
+if poetry run python "{engine_path}" "{profile_file_path}"; then
     echo "$(date): Backup for '{profile_name}' completed successfully" >> "$LOG_FILE"
     exit 0
 else
@@ -157,17 +157,20 @@ fi
 
         return self.set_crontab(new_content)
 
-    def add_backup_job(self, profile: BackupProfile) -> Tuple[bool, str]:
+    def add_backup_job(self, profile: BackupProfile, profile_file_path: str) -> Tuple[bool, str]:
         """Add a backup job to root crontab."""
         if not profile.schedule.enabled:
             return False, "Schedule is not enabled"
+        
+        if not profile_file_path:
+            return False, "Profile must be saved to a file before scheduling"
 
         try:
             # Remove existing backup jobs first
             self.remove_backup_jobs()
 
             # Create the backup script
-            script_path = self.create_backup_script(profile.name)
+            script_path = self.create_backup_script(profile.name, profile_file_path)
 
             # Generate cron expression
             cron_expr = self.generate_cron_expression(profile.schedule)
