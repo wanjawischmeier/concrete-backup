@@ -29,3 +29,4 @@
 - [ ] Custom icon
 - [ ] Improved bottom layout
 - [ ] Docker compose setup
+- [x] Add language startup option

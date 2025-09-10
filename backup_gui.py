@@ -57,23 +57,62 @@ def parse_arguments():
         action="store_true",
         help="Test that the application can be imported (for CI/CD)"
     )
+    parser.add_argument(
+        "--language", "-l",
+        type=str,
+        help="Set the interface language (e.g., en, de, fr, es). If not specified, uses system locale."
+    )
+    parser.add_argument(
+        "--list-languages",
+        action="store_true",
+        help="List available interface languages and exit"
+    )
     return parser.parse_args()
 
 
-def main():
-    """Main application entry point."""
-    # Check privileges first
-    check_privileges()
+def list_available_languages():
+    """List available interface languages."""
+    print("Available interface languages:")
+    print("  en - English (default)")
     
-    # Parse command line arguments
+    # Check for available translation files
+    localization_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "localization", "translations")
+    if os.path.exists(localization_dir):
+        for file in os.listdir(localization_dir):
+            if file.endswith('.qm'):
+                # Extract language code from filename (e.g., concrete_backup_de.qm -> de)
+                lang_code = file.replace('concrete_backup_', '').replace('.qm', '')
+                if lang_code != 'en':  # Don't list English twice
+                    lang_name = {
+                        'de': 'German',
+                        'fr': 'French',
+                        'es': 'Spanish',
+                        'it': 'Italian',
+                        'pt': 'Portuguese',
+                        'ru': 'Russian',
+                        'zh': 'Chinese',
+                        'ja': 'Japanese'
+                    }.get(lang_code, f'Language ({lang_code})')
+                    print(f"  {lang_code} - {lang_name}")
+
+
+def main():
+    """Main entry point for the backup GUI application."""
     args = parse_arguments()
-
-    # Handle special modes
+    
+    if args.list_languages:
+        list_available_languages()
+        sys.exit(0)
+    
     if args.headless_test:
-        return handle_headless_test()
-
-    # Run normal GUI application
-    return run_gui_application()
+        print("Headless test passed: Application can be imported successfully")
+        sys.exit(0)
+    
+    try:
+        run_gui_application(args.language)
+    except Exception as e:
+        print(f"Error starting application: {e}")
+        sys.exit(1)
 
 
 def handle_headless_test() -> int:
@@ -91,7 +130,7 @@ def handle_headless_test() -> int:
         return 1
 
 
-def run_gui_application() -> int:
+def run_gui_application(language_code: str = None) -> int:
     """Run the GUI application."""
     print("Starting Concrete Backup GUI...")
 
@@ -102,7 +141,14 @@ def run_gui_application() -> int:
 
     # Initialize translation system
     from localization import set_language
-    set_language()
+    if language_code:
+        print(f"Setting language to: {language_code}")
+        success = set_language(language_code)
+        if not success:
+            print(f"Warning: Could not load language '{language_code}', falling back to system default")
+            set_language()
+    else:
+        set_language()
 
     try:
         return start_main_window(app)
