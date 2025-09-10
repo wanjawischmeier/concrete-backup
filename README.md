@@ -126,14 +126,3 @@ To contribute translations:
 1. Edit the appropriate .ts file with your translations
 2. Run `python localization/manage_translations.py compile` to test
 3. Submit a pull request
-
-## TODOs
-### Fixes
-- [x] Centralized profile validation
-- [x] Proper register_tabs method
-
-### Features
-- [x] Improved bottom section layout
-- [ ] Profile creation wizard
-- [x] Internationalization support
-- [ ] On profile validation failed: Point to invalid field

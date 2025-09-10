@@ -3,6 +3,10 @@
     <context>
         <name>MainWindow</name>
         <message>
+            <source>A comprehensive backup management system for Ubuntu.</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>About</source>
             <translation type="unfinished" />
         </message>
@@ -27,11 +31,19 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>App icon created by juicy_fish - Flaticon</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Authentication Failed</source>
             <translation type="unfinished" />
         </message>
         <message>
             <source>Auto-mount drive before backup</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Automatic and scheduled backups</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -51,7 +63,15 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Build Date</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Close</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Comprehensive logging</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -63,11 +83,19 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Credits</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Current Schedule Status</source>
             <translation type="unfinished" />
         </message>
         <message>
             <source>Custom Commands</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Custom pre/post backup commands</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -83,7 +111,15 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Developed with PyQt5 and Python</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Disable Scheduling</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Drive detection and auto-mounting</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -107,6 +143,10 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Features</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Help</source>
             <translation type="unfinished" />
         </message>
@@ -116,6 +156,10 @@
         </message>
         <message>
             <source>Manual Mode</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Multiple destination support</source>
             <translation type="unfinished" />
         </message>
         <message>
@@ -219,6 +263,10 @@
             <translation type="unfinished" />
         </message>
         <message>
+            <source>Scheduled Mode</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Scheduling Error</source>
             <translation type="unfinished" />
         </message>
@@ -236,6 +284,14 @@
         </message>
         <message>
             <source>Unsaved Changes</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>User-friendly GUI interface</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Version</source>
             <translation type="unfinished" />
         </message>
         <message>

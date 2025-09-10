@@ -3,6 +3,10 @@
     <context>
         <name>MainWindow</name>
         <message>
+            <source>A comprehensive backup management system for Ubuntu.</source>
+            <translation>Ein umfassendes Backup-Verwaltungssystem für Ubuntu.</translation>
+        </message>
+        <message>
             <source>About</source>
             <translation>Über</translation>
         </message>
@@ -27,12 +31,20 @@
             <translation>Erweitert</translation>
         </message>
         <message>
+            <source>App icon created by juicy_fish - Flaticon</source>
+            <translation>App-Symbol erstellt von juicy_fish - Flaticon</translation>
+        </message>
+        <message>
             <source>Authentication Failed</source>
             <translation>Authentifizierung fehlgeschlagen</translation>
         </message>
         <message>
             <source>Auto-mount drive before backup</source>
             <translation>Laufwerk vor Backup automatisch mounten</translation>
+        </message>
+        <message>
+            <source>Automatic and scheduled backups</source>
+            <translation>Automatische und geplante Backups</translation>
         </message>
         <message>
             <source>Backup Progress</source>
@@ -51,8 +63,16 @@
             <translation>Backup läuft noch. Sind Sie sicher, dass Sie schließen möchten?</translation>
         </message>
         <message>
+            <source>Build Date</source>
+            <translation>Build-Datum</translation>
+        </message>
+        <message>
             <source>Close</source>
             <translation>Schließen</translation>
+        </message>
+        <message>
+            <source>Comprehensive logging</source>
+            <translation>Umfassende Protokollierung</translation>
         </message>
         <message>
             <source>Concrete Backup</source>
@@ -63,12 +83,20 @@
             <translation>Entfernen bestätigen</translation>
         </message>
         <message>
+            <source>Credits</source>
+            <translation>Credits</translation>
+        </message>
+        <message>
             <source>Current Schedule Status</source>
             <translation>Aktueller Zeitplanstatus</translation>
         </message>
         <message>
             <source>Custom Commands</source>
             <translation>Benutzerdefinierte Befehle</translation>
+        </message>
+        <message>
+            <source>Custom pre/post backup commands</source>
+            <translation type="unfinished" />
         </message>
         <message>
             <source>Daily backup</source>
@@ -83,8 +111,16 @@
             <translation>Ziele</translation>
         </message>
         <message>
+            <source>Developed with PyQt5 and Python</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Disable Scheduling</source>
             <translation>Zeitplanung deaktivieren</translation>
+        </message>
+        <message>
+            <source>Drive detection and auto-mounting</source>
+            <translation type="unfinished" />
         </message>
         <message>
             <source>Dry Run</source>
@@ -107,6 +143,10 @@
             <translation>Ausführungsoptionen</translation>
         </message>
         <message>
+            <source>Features</source>
+            <translation>Funktionen</translation>
+        </message>
+        <message>
             <source>Help</source>
             <translation>Hilfe</translation>
         </message>
@@ -117,6 +157,10 @@
         <message>
             <source>Manual Mode</source>
             <translation>Manueller Modus</translation>
+        </message>
+        <message>
+            <source>Multiple destination support</source>
+            <translation type="unfinished" />
         </message>
         <message>
             <source>New</source>
@@ -219,6 +263,10 @@
             <translation>Zeitplan deaktiviert</translation>
         </message>
         <message>
+            <source>Scheduled Mode</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
             <source>Scheduling Error</source>
             <translation>Zeitplanungsfehler</translation>
         </message>
@@ -237,6 +285,14 @@
         <message>
             <source>Unsaved Changes</source>
             <translation>Nicht gespeicherte Änderungen</translation>
+        </message>
+        <message>
+            <source>User-friendly GUI interface</source>
+            <translation type="unfinished" />
+        </message>
+        <message>
+            <source>Version</source>
+            <translation>Version</translation>
         </message>
         <message>
             <source>You have unsaved changes. Do you want to save before exiting?</source>

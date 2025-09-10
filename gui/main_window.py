@@ -6,6 +6,7 @@ Main Window for Concrete Backup GUI
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
 from gui.backup_config_view import BackupConfigView
+from gui.dialogs.about_dialog import AboutDialog
 from version import get_version_info
 
 
@@ -77,12 +78,8 @@ class MainWindow(QMainWindow):
 
     def show_about(self):
         """Show about dialog."""
-        version_info = get_version_info()
-        QMessageBox.about(self, self.tr("About Concrete Backup"),
-                          f"{version_info['full_name']}\n\n"
-                          "A comprehensive backup management system for Ubuntu.\n\n"
-                          "App icon created by juicy_fish - Flaticon\n"
-                          "https://www.flaticon.com/free-icons/firewall")
+        about_dialog = AboutDialog(self)
+        about_dialog.show_dialog()
 
     def closeEvent(self, event):
         """Handle window close event - check for unsaved changes."""
