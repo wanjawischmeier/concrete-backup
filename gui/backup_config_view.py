@@ -143,6 +143,9 @@ class BackupConfigView(QWidget):
             self.schedule_tab.load_from_profile(self.current_profile)
             self.custom_commands_tab.load_from_profile(self.current_profile)
             self.advanced_settings_tab.load_from_profile(self.current_profile)
+            
+            # Load schedule controller state
+            self.schedule_controller.load_schedule_from_profile(self.current_profile)
 
         self.update_schedule_status()
         self.update_ui_state()

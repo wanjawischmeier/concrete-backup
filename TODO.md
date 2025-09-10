@@ -21,6 +21,7 @@
 - [x] Remove unnecessary progile verification conditions
 - [x] Fix commands not ran if destinations empty
 - [x] Fix cron jobs not being scheduled
+- [x] Fix cron status not being loaded
 
 ## Features
 - [x] Improved bottom section layout
