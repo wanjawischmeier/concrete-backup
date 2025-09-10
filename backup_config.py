@@ -212,10 +212,11 @@ class BackupConfigManager:
 
         if not profile.name:
             errors.append("Profile name is required")
-        if not profile.sources:
-            errors.append("No backup sources defined. Please add at least one source directory.")
-        if not profile.destinations:
-            errors.append("No backup destinations defined. Please add at least one destination.")
+        # Removed requirements for sources and destinations
+        # if not profile.sources:
+        #     errors.append("No backup sources defined. Please add at least one source directory.")
+        # if not profile.destinations:
+        #     errors.append("No backup destinations defined. Please add at least one destination.")
 
         return errors
 

@@ -16,7 +16,9 @@
     - [ ] Profile Validation Errors
     - [ ] Save dialog
     - [x] About dialog
+    - Various other things, this is an incomplete list
 - [x] Seperate about dialog
+- [x] Remove unnecessary progile verification conditions
 
 ## Features
 - [x] Improved bottom section layout
