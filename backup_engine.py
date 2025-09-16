@@ -234,13 +234,13 @@ class BackupEngine:
             # 2. Process all destinations
             destinations_success = self._process_all_destinations(profile)
 
-            # 3. Run post-backup commands (always run if pre-commands succeeded)
+            # 3. Cleanup mounted drives before post-backup commands
+            self._cleanup_mounted_drives()
+
+            # 4. Run post-backup commands (always run if pre-commands succeeded)
             if not self.run_custom_commands(profile.post_commands, "post-backup", self.ui_logger):
                 self._log_error("Post-backup commands failed")
                 destinations_success = False
-
-            # 4. Cleanup mounted drives
-            self._cleanup_mounted_drives()
 
             return destinations_success
             
@@ -331,14 +331,31 @@ class BackupEngine:
 
         return success
 
-    def _cleanup_mounted_drives(self):
-        """Unmount all drives we mounted during backup."""
+    def _cleanup_mounted_drives(self, max_unmount_retries: int = 3):
+        """Unmount all drives we mounted during backup with retry logic."""
+        import time
+        
         for drive in self.mounted_drives:
             self._log_info(f"Unmounting {drive}...")
-            if self.drive_manager.unmount_drive(drive):
-                self._log_info(f"Successfully unmounted {drive}")
-            else:
-                self._log_error(f"Failed to unmount {drive}")
+            success = False
+            
+            for attempt in range(max_unmount_retries):
+                if attempt > 0:
+                    self._log_info(f"Unmount attempt {attempt + 1}/{max_unmount_retries} for {drive}")
+                    time.sleep(2)  # Wait 2 seconds before retry
+                
+                if self.drive_manager.unmount_drive(drive):
+                    self._log_info(f"Successfully unmounted {drive}")
+                    success = True
+                    break
+                else:
+                    if attempt < max_unmount_retries - 1:
+                        self._log_info(f"Unmount attempt {attempt + 1} failed, retrying...")
+                    else:
+                        self._log_error(f"Failed to unmount {drive} after {max_unmount_retries} attempts")
+            
+            if not success:
+                self._log_error(f"Warning: Drive {drive} may still be mounted")
 
     def _setup_destination(self, destination: BackupDestination) -> Tuple[bool, str]:
         """Setup destination for backup (mounting, directory creation)."""

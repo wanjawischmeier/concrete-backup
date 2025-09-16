@@ -27,7 +27,7 @@
 - [ ] `managers.drive_manager - INFO - Refreshing drive list` gets called twice on startup
 - [ ] Auto mount toggle doesnt mark file as dirty
 - [ ] Trifold folder nesting
-- [ ] Unmount before post-backup commands
+- [x] Unmount before post-backup commands
 - [x] Logs split into 2 files, last part missing?
 
 ## Features
@@ -46,3 +46,4 @@
 - [ ] Change command list order
 - [ ] Write current step on ui progress bar
 - [ ] Iron out some ntfs-specific rsync issues
+- [ ] Recently opened entry in file menu
