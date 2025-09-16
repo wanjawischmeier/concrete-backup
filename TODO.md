@@ -25,6 +25,10 @@
 - [ ] Fix changes only being applied when toggling scheduling
 - [x] Fix bash script execution
 - [ ] `managers.drive_manager - INFO - Refreshing drive list` gets called twice on startup
+- [ ] Auto mount toggle doesnt mark file as dirty
+- [ ] Trifold folder nesting
+- [ ] Unmount before post-backup commands
+- [x] Logs split into 2 files, last part missing?
 
 ## Features
 - [x] Improved bottom section layout
@@ -40,3 +44,5 @@
 - [x] Extensive console logging
 - [ ] Refresh option next to drive list
 - [ ] Change command list order
+- [ ] Write current step on ui progress bar
+- [ ] Iron out some ntfs-specific rsync issues

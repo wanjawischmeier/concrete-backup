@@ -99,13 +99,18 @@ class BackupWorker(QThread):
         self.qt_handler.setLevel(logging.INFO)
 
         # Set up formatter
-        formatter = logging.Formatter('%(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.qt_handler.setFormatter(formatter)
 
         # Add handler to root logger to catch all logging
         root_logger = logging.getLogger()
         root_logger.addHandler(self.qt_handler)
         root_logger.setLevel(logging.INFO)
+        
+        # Also add to backup-specific loggers to ensure we catch everything
+        backup_logger = logging.getLogger('backup_engine')
+        backup_logger.addHandler(self.qt_handler)
+        backup_logger.setLevel(logging.INFO)
 
     def _restore_stdout(self):
         """Restore original stdout and remove logging handlers."""
@@ -115,3 +120,7 @@ class BackupWorker(QThread):
         if hasattr(self, 'qt_handler'):
             root_logger = logging.getLogger()
             root_logger.removeHandler(self.qt_handler)
+            
+            # Also remove from backup-specific loggers
+            backup_logger = logging.getLogger('backup_engine')
+            backup_logger.removeHandler(self.qt_handler)
