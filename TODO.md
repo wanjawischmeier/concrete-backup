@@ -29,6 +29,7 @@
 - [x] Unmount before post-backup commands
 - [x] Logs split into 2 files, last part missing?
 - [ ] Rsync logs not showing in ui
+- [ ] File logs not saved anymore
 
 ## Features
 - [x] Improved bottom section layout
