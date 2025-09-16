@@ -271,8 +271,8 @@ class BackupEngine:
             if not setup_success:
                 return False, setup_msg
 
-            # Use existing destination logger or create one if not available
-            logger = self.destination_logger
+            # Use existing destination logger or fallback to UI logger
+            logger = self.destination_logger if self.destination_logger else self.ui_logger
                 
             # Log destination-specific messages
             self._log_info(f"Starting backup to {destination.target_path}")

@@ -114,28 +114,18 @@ class DriveManager:
             os.makedirs(mount_point, exist_ok=True)
             self.logger.info(f"Created mount point directory: {mount_point}")
 
-            # Try udisksctl first
-            self.logger.info(f"Trying udisksctl to mount {drive_device}")
+            # Use sudo mount directly to mount to our specific location
+            self.logger.info(f"Trying sudo mount for {drive_device}")
             result = subprocess.run([
-                'udisksctl', 'mount', '-b', drive_device
+                'sudo', 'mount', drive_device, mount_point
             ], capture_output=True, text=True)
 
             if result.returncode == 0:
-                self.logger.info(f"Successfully mounted {drive_device} using udisksctl")
-                return True, f"Mounted {drive_device}"
+                self.logger.info(f"Successfully mounted {drive_device} at {mount_point} using sudo")
+                return True, f"Mounted {drive_device} at {mount_point}"
             else:
-                # Fallback to sudo mount
-                self.logger.info(f"udisksctl failed, trying sudo mount for {drive_device}")
-                result = subprocess.run([
-                    'sudo', 'mount', drive_device, mount_point
-                ], capture_output=True, text=True)
-
-                if result.returncode == 0:
-                    self.logger.info(f"Successfully mounted {drive_device} at {mount_point} using sudo")
-                    return True, f"Mounted {drive_device} at {mount_point}"
-                else:
-                    self.logger.error(f"Failed to mount {drive_device}: {result.stderr}")
-                    return False, f"Failed to mount: {result.stderr}"
+                self.logger.error(f"Failed to mount {drive_device}: {result.stderr}")
+                return False, f"Failed to mount: {result.stderr}"
 
         except (OSError, subprocess.SubprocessError, PermissionError) as e:
             self.logger.error(f"Error mounting drive {drive_device}: {str(e)}")
@@ -146,28 +136,23 @@ class DriveManager:
         self.logger.info(f"Attempting to unmount {drive_device}")
         
         try:
-            # Try udisksctl first
-            self.logger.info(f"Trying udisksctl to unmount {drive_device}")
+            # Try sudo umount directly 
+            self.logger.info(f"Trying sudo umount for {drive_device}")
             result = subprocess.run([
-                'udisksctl', 'unmount', '-b', drive_device
+                'sudo', 'umount', drive_device
             ], capture_output=True, text=True)
-
+            
             if result.returncode == 0:
-                self.logger.info(f"Successfully unmounted {drive_device} using udisksctl")
+                self.logger.info(f"Successfully unmounted {drive_device} using sudo")
                 return True
             else:
-                # Fallback to sudo umount
-                self.logger.info(f"udisksctl failed, trying sudo umount for {drive_device}")
-                result = subprocess.run([
-                    'sudo', 'umount', drive_device
-                ], capture_output=True, text=True)
-                
-                success = result.returncode == 0
-                if success:
-                    self.logger.info(f"Successfully unmounted {drive_device} using sudo")
+                # Check if it's already unmounted
+                if "not mounted" in result.stderr:
+                    self.logger.info(f"{drive_device} was already unmounted")
+                    return True
                 else:
                     self.logger.error(f"Failed to unmount {drive_device}: {result.stderr}")
-                return success
+                    return False
 
         except (OSError, subprocess.SubprocessError, PermissionError) as e:
             self.logger.error(f"Error unmounting drive {drive_device}: {str(e)}")

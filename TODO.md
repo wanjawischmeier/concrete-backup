@@ -30,6 +30,7 @@
 - [x] Logs split into 2 files, last part missing?
 - [ ] Rsync logs not showing in ui
 - [ ] File logs not saved anymore
+- [x] Mounting issues with udiskctl
 
 ## Features
 - [x] Improved bottom section layout
