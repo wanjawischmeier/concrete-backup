@@ -136,14 +136,12 @@ class DriveManager:
         self.logger.info(f"Attempting to unmount {drive_device}")
         
         try:
-            # Try sudo umount directly 
-            self.logger.info(f"Trying sudo umount for {drive_device}")
             result = subprocess.run([
                 'sudo', 'umount', drive_device
             ], capture_output=True, text=True)
             
             if result.returncode == 0:
-                self.logger.info(f"Successfully unmounted {drive_device} using sudo")
+                self.logger.info(f"Successfully unmounted {drive_device}")
                 return True
             else:
                 # Check if it's already unmounted
