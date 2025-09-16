@@ -8,6 +8,7 @@ import os
 import subprocess
 import json
 from typing import List, Dict
+from utils.logging_helper import get_backend_logger
 
 
 class DriveInfo:
@@ -34,9 +35,11 @@ class DriveManager:
 
     def __init__(self):
         self.drives: List[DriveInfo] = []
+        self.logger = get_backend_logger(__name__)
 
     def refresh_drives(self) -> List[DriveInfo]:
         """Discover and refresh the list of available drives."""
+        self.logger.info("Refreshing drive list")
         self.drives = []
 
         try:
@@ -48,9 +51,15 @@ class DriveManager:
 
             data = json.loads(result.stdout)
             self._parse_lsblk_output(data['blockdevices'])
+            
+            self.logger.info(f"Found {len(self.drives)} drives")
 
-        except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
-            print(f"Error getting drive information: {e}")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"lsblk command failed: {e}")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to parse lsblk output: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error refreshing drives: {e}")
 
         return self.drives
 
@@ -91,53 +100,75 @@ class DriveManager:
 
     def mount_drive(self, drive_device: str, mount_point: str) -> tuple[bool, str]:
         """Mount a drive to the specified mount point."""
+        self.logger.info(f"Attempting to mount {drive_device} at {mount_point}")
+        
         try:
             # Check if already mounted
             result = subprocess.run(['findmnt', mount_point],
                                     capture_output=True, text=True)
             if result.returncode == 0:
+                self.logger.info(f"Drive already mounted at {mount_point}")
                 return True, f"Already mounted at {mount_point}"
 
             # Create mount point
             os.makedirs(mount_point, exist_ok=True)
+            self.logger.info(f"Created mount point directory: {mount_point}")
 
             # Try udisksctl first
+            self.logger.info(f"Trying udisksctl to mount {drive_device}")
             result = subprocess.run([
                 'udisksctl', 'mount', '-b', drive_device
             ], capture_output=True, text=True)
 
             if result.returncode == 0:
+                self.logger.info(f"Successfully mounted {drive_device} using udisksctl")
                 return True, f"Mounted {drive_device}"
             else:
                 # Fallback to sudo mount
+                self.logger.info(f"udisksctl failed, trying sudo mount for {drive_device}")
                 result = subprocess.run([
                     'sudo', 'mount', drive_device, mount_point
                 ], capture_output=True, text=True)
 
                 if result.returncode == 0:
+                    self.logger.info(f"Successfully mounted {drive_device} at {mount_point} using sudo")
                     return True, f"Mounted {drive_device} at {mount_point}"
                 else:
+                    self.logger.error(f"Failed to mount {drive_device}: {result.stderr}")
                     return False, f"Failed to mount: {result.stderr}"
 
         except (OSError, subprocess.SubprocessError, PermissionError) as e:
+            self.logger.error(f"Error mounting drive {drive_device}: {str(e)}")
             return False, f"Error mounting drive: {str(e)}"
 
     def unmount_drive(self, drive_device: str) -> bool:
         """Unmount a drive."""
+        self.logger.info(f"Attempting to unmount {drive_device}")
+        
         try:
             # Try udisksctl first
+            self.logger.info(f"Trying udisksctl to unmount {drive_device}")
             result = subprocess.run([
                 'udisksctl', 'unmount', '-b', drive_device
             ], capture_output=True, text=True)
 
             if result.returncode == 0:
+                self.logger.info(f"Successfully unmounted {drive_device} using udisksctl")
                 return True
             else:
                 # Fallback to sudo umount
+                self.logger.info(f"udisksctl failed, trying sudo umount for {drive_device}")
                 result = subprocess.run([
                     'sudo', 'umount', drive_device
                 ], capture_output=True, text=True)
-                return result.returncode == 0
+                
+                success = result.returncode == 0
+                if success:
+                    self.logger.info(f"Successfully unmounted {drive_device} using sudo")
+                else:
+                    self.logger.error(f"Failed to unmount {drive_device}: {result.stderr}")
+                return success
 
-        except (OSError, subprocess.SubprocessError, PermissionError):
+        except (OSError, subprocess.SubprocessError, PermissionError) as e:
+            self.logger.error(f"Error unmounting drive {drive_device}: {str(e)}")
             return False

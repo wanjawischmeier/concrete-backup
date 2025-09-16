@@ -14,6 +14,7 @@ from typing import List, Tuple
 
 from backup_config import BackupConfigManager, BackupDestination, BackupProfile
 from managers.drive_manager import DriveManager
+from utils.logging_helper import get_backend_logger
 
 
 class BackupEngine:
@@ -22,28 +23,30 @@ class BackupEngine:
     def __init__(self, profile: BackupProfile = None):
         """Initialize the backup engine with a profile object."""
         self.profile = profile
-        self.logger = None
+        self.logger = get_backend_logger(__name__)
+        self.destination_logger = None  # For destination-specific logging
         self.mounted_drives = []  # Track what we mounted
         self.drive_manager = DriveManager()  # For drive operations
 
     def setup_logging(self, destination_path: str) -> logging.Logger:
-        """Setup logging for a specific destination."""
+        """Setup destination-specific logging (in addition to console logging)."""
         log_dir = Path(destination_path) / "backup_logs"
         log_dir.mkdir(exist_ok=True)
 
         log_file = log_dir / f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
-        logger = logging.getLogger(f"backup_{destination_path}")
-        logger.setLevel(logging.INFO)
+        # Create a destination-specific logger
+        destination_logger = logging.getLogger(f"backup_dest_{destination_path}")
+        destination_logger.setLevel(logging.INFO)
 
         # Clear any existing handlers
-        logger.handlers.clear()
+        destination_logger.handlers.clear()
 
-        # File handler
+        # File handler for destination-specific logs
         file_handler = logging.FileHandler(log_file)
         file_handler.setLevel(logging.INFO)
 
-        # Console handler
+        # Console handler for destination-specific logs
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
 
@@ -55,10 +58,13 @@ class BackupEngine:
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
 
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
+        destination_logger.addHandler(file_handler)
+        destination_logger.addHandler(console_handler)
+        
+        # Prevent propagation to avoid duplicate console messages
+        destination_logger.propagate = False
 
-        return logger
+        return destination_logger
 
     def run_custom_commands(self, commands: List, phase: str, logger: logging.Logger) -> bool:
         """Run custom commands (pre or post backup)."""
@@ -173,35 +179,35 @@ class BackupEngine:
             profile = self.profile
 
         if not profile:
-            print("No profile provided")
+            self.logger.error("No profile provided")
             return False
 
         # Validate profile
         config_manager = BackupConfigManager()
         errors = config_manager.validate_profile(profile)
         if errors:
-            print("Profile validation failed:")
+            self.logger.error("Profile validation failed:")
             for error in errors:
-                print(f"  - {error}")
+                self.logger.error(f"  - {error}")
             return False
 
-        print(f"Starting backup for profile: {profile.name}")
+        self.logger.info(f"Starting backup for profile: {profile.name}")
 
-        # Setup logging (use first enabled destination or temp directory)
+        # Setup destination-specific logging (use first enabled destination or temp directory)
         log_dir = self._get_log_directory(profile)
-        logger = self.setup_logging(log_dir)
+        self.destination_logger = self.setup_logging(log_dir)
         
         # 1. Run pre-backup commands
-        if not self.run_custom_commands(profile.pre_commands, "pre-backup", logger):
-            print("Pre-backup commands failed")
+        if not self.run_custom_commands(profile.pre_commands, "pre-backup", self.destination_logger):
+            self.logger.error("Pre-backup commands failed")
             return False
 
         # 2. Process all destinations
         destinations_success = self._process_all_destinations(profile)
 
         # 3. Run post-backup commands (always run if pre-commands succeeded)
-        if not self.run_custom_commands(profile.post_commands, "post-backup", logger):
-            print("Post-backup commands failed")
+        if not self.run_custom_commands(profile.post_commands, "post-backup", self.destination_logger):
+            self.logger.error("Post-backup commands failed")
             destinations_success = False
 
         # 4. Cleanup mounted drives
@@ -264,33 +270,33 @@ class BackupEngine:
 
         for dest_idx, destination in enumerate(profile.destinations):
             if not destination.enabled:
-                print(f"Skipping disabled destination {dest_idx + 1}")
+                self.logger.info(f"Skipping disabled destination {dest_idx + 1}")
                 continue
 
             destinations_processed += 1
-            print(f"\nProcessing destination {dest_idx + 1}: {destination.target_path}")
+            self.logger.info(f"Processing destination {dest_idx + 1}: {destination.target_path}")
 
             dest_success, message = self.run_backup_to_destination(destination, profile)
             
             if dest_success:
-                print(f"✓ {message}")
+                self.logger.info(f"✓ {message}")
             else:
-                print(f"✗ {message}")
+                self.logger.error(f"✗ {message}")
                 success = False
 
         if destinations_processed == 0:
-            print("No destinations to process - only running custom commands")
+            self.logger.info("No destinations to process - only running custom commands")
 
         return success
 
     def _cleanup_mounted_drives(self):
         """Unmount all drives we mounted during backup."""
         for drive in self.mounted_drives:
-            print(f"Unmounting {drive}...")
+            self.logger.info(f"Unmounting {drive}...")
             if self.drive_manager.unmount_drive(drive):
-                print(f"Successfully unmounted {drive}")
+                self.logger.info(f"Successfully unmounted {drive}")
             else:
-                print(f"Failed to unmount {drive}")
+                self.logger.error(f"Failed to unmount {drive}")
 
     def _setup_destination(self, destination: BackupDestination) -> Tuple[bool, str]:
         """Setup destination for backup (mounting, directory creation)."""
@@ -331,8 +337,11 @@ class BackupEngine:
 
 def main():
     """Command-line entry point for backup engine."""
+    # Setup main logger for CLI usage
+    main_logger = get_backend_logger(__name__ + ".main")
+    
     if len(sys.argv) != 2:
-        print("Usage: backup_engine.py <profile_file_path>")
+        main_logger.error("Usage: backup_engine.py <profile_file_path>")
         sys.exit(1)
 
     profile_file_path = sys.argv[1]
@@ -344,27 +353,27 @@ def main():
         
         profile = config_manager.load_profile_from_file(profile_file_path)
         if not profile:
-            print(f"Error: Could not load profile from file '{profile_file_path}'")
+            main_logger.error(f"Could not load profile from file '{profile_file_path}'")
             sys.exit(1)
 
         engine = BackupEngine(profile)
         success = engine.run_backup()
 
         if success:
-            print("\nBackup completed successfully!")
+            main_logger.info("Backup completed successfully!")
             sys.exit(0)
         else:
-            print("\nBackup completed with errors!")
+            main_logger.error("Backup completed with errors!")
             sys.exit(1)
 
     except (ValueError, OSError, PermissionError) as e:
-        print(f"Fatal error: {e}")
+        main_logger.error(f"Fatal error: {e}")
         sys.exit(1)
     except KeyboardInterrupt:
-        print("\nBackup interrupted by user")
+        main_logger.info("Backup interrupted by user")
         sys.exit(130)
     except Exception as e:
-        print(f"Unexpected fatal error: {e}")
+        main_logger.error(f"Unexpected fatal error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

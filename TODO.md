@@ -36,4 +36,4 @@
 - [ ] Docker compose setup
 - [x] Add language startup option
 - [ ] Add "Ignore errors" setting
-- [ ] Extensive console logging
+- [x] Extensive console logging

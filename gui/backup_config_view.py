@@ -19,6 +19,7 @@ from gui.tabs.destinations_tab import DestinationsTab
 from gui.tabs.schedule_tab import ScheduleTab
 from gui.tabs.custom_commands_tab import CustomCommandsTab
 from gui.controllers.profile_ui_controller import ProfileUIController
+from utils.logging_helper import get_ui_logger
 from gui.tabs.advanced_settings_tab import AdvancedSettingsTab
 from gui.controllers.schedule_ui_controller import ScheduleUIController
 
@@ -28,6 +29,10 @@ class BackupConfigView(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        # Setup logging
+        self.logger = get_ui_logger(__name__)
+        self.logger.ui("Initializing BackupConfigView")
 
         # Initialize managers
         self.drive_manager = DriveManager()
@@ -132,6 +137,7 @@ class BackupConfigView(QWidget):
 
     def open_profile_file(self):
         """Open a profile file."""
+        self.logger.ui("Opening profile file")
         self.profile_controller.open_profile_file()
         self.load_profile_to_ui()
 
@@ -194,6 +200,9 @@ class BackupConfigView(QWidget):
     # Schedule operations - delegate to main view controller
     def toggle_schedule_button(self):
         """Handle schedule button toggle."""
+        is_enabled = self.schedule_toggle_btn.isChecked()
+        self.logger.info(f"Schedule button toggled: enabled={is_enabled}")
+        
         if not self.main_view_controller.validate_profile_for_backup(self.current_profile):
             self.schedule_toggle_btn.setChecked(False)
             self.update_schedule_button_style()
@@ -201,25 +210,30 @@ class BackupConfigView(QWidget):
 
         # Auto-save before toggling schedule
         if not self.save_current_profile():
+            self.logger.warning("Failed to save profile before toggling schedule")
             self.schedule_toggle_btn.setChecked(False)
             self.update_schedule_button_style()
             return
 
         # Update the profile's schedule enabled state
-        is_enabled = self.schedule_toggle_btn.isChecked()
         if self.current_profile:
             self.current_profile.schedule.enabled = is_enabled
 
             if is_enabled:
                 # Enable scheduling - add cron job
+                self.logger.ui(f"Enabling schedule for profile '{self.current_profile.name}'")
                 profile_path = self.profile_controller.get_current_profile_path()
                 success, message = self.cron_manager.add_backup_job(self.current_profile, profile_path)
                 if not success:
+                    self.logger.ui(f"Failed to enable schedule: {message}")
                     QMessageBox.warning(self, tr("Scheduling Error"), f"Failed to schedule backup: {message}")
                     self.schedule_toggle_btn.setChecked(False)
                     self.current_profile.schedule.enabled = False
+                else:
+                    self.logger.ui(f"Successfully enabled schedule: {message}")
             else:
                 # Disable scheduling - remove cron job
+                self.logger.ui(f"Disabling schedule for profile '{self.current_profile.name}'")
                 self.cron_manager.remove_backup_jobs()
 
             # Update the schedule tab to reflect the changes

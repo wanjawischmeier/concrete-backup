@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QLabel
 
 from backup_config import BackupConfigManager, BackupProfile
 from managers.profile_manager import ProfileManager
+from utils.logging_helper import get_ui_logger
 
 
 class ProfileUIController:
@@ -21,6 +22,8 @@ class ProfileUIController:
         self.parent_widget = parent_widget
         self.profile_name_label = profile_name_label
         self.profile_status_label = profile_status_label
+        
+        self.logger = get_ui_logger(__name__)
 
         self.config_manager = BackupConfigManager()
         self.profile_manager = ProfileManager(parent_widget=parent_widget)

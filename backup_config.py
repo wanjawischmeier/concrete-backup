@@ -9,6 +9,7 @@ import os
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass, asdict
 from pathlib import Path
+from utils.logging_helper import get_backend_logger
 
 
 @dataclass
@@ -93,6 +94,7 @@ class BackupConfigManager:
     def __init__(self):
         """Initialize the config manager."""
         self.current_profile: Optional[BackupProfile] = None
+        self.logger = get_backend_logger(__name__)
 
     def create_profile(self, name: str) -> BackupProfile:
         """Create a new backup profile."""
@@ -114,6 +116,8 @@ class BackupConfigManager:
 
     def save_profile(self, profile: BackupProfile, filepath: str) -> bool:
         """Save a backup profile to a YAML file."""
+        self.logger.info(f"Saving profile '{profile.name}' to file: {filepath}")
+        
         try:
             from datetime import datetime
             profile.modified_at = datetime.now().isoformat()
@@ -122,40 +126,62 @@ class BackupConfigManager:
 
             # Create directory if it doesn't exist
             filepath_obj.parent.mkdir(parents=True, exist_ok=True)
+            self.logger.info(f"Created directory if needed: {filepath_obj.parent}")
 
             # Convert dataclass to dict
             profile_dict = self._profile_to_dict(profile)
+            self.logger.info(f"Converted profile to dict with {len(profile_dict)} keys")
 
             # Always save as YAML
             with open(filepath_obj, 'w') as f:
                 yaml.dump(profile_dict, f, default_flow_style=False, indent=2)
 
+            self.logger.info(f"Successfully saved profile to: {filepath}")
             return True
 
-        except (OSError, PermissionError, yaml.YAMLError) as e:
-            print(f"Error saving profile: {e}")
+        except (OSError, PermissionError) as e:
+            self.logger.error(f"File system error saving profile: {e}")
+            return False
+        except yaml.YAMLError as e:
+            self.logger.error(f"YAML serialization error: {e}")
+            return False
+        except Exception as e:
+            self.logger.error(f"Unexpected error saving profile: {e}")
             return False
 
     def load_profile_from_file(self, filepath: str) -> Optional[BackupProfile]:
         """Load a backup profile from a YAML file."""
+        self.logger.info(f"Loading profile from file: {filepath}")
+        
         try:
             filepath_obj = Path(filepath)
             if not filepath_obj.exists():
+                self.logger.error(f"Profile file does not exist: {filepath}")
                 return None
 
             with open(filepath_obj, 'r') as f:
                 profile_dict = yaml.safe_load(f)
 
+            self.logger.info(f"Parsing profile data for: {profile_dict.get('name', 'unnamed')}")
             profile = self._dict_to_profile(profile_dict)
             self.current_profile = profile
+            self.logger.info(f"Successfully loaded profile: {profile.name}")
             return profile
 
-        except (OSError, PermissionError, FileNotFoundError, yaml.YAMLError) as e:
-            print(f"Error loading profile: {e}")
+        except (OSError, PermissionError, FileNotFoundError) as e:
+            self.logger.error(f"File system error loading profile: {e}")
+            return None
+        except yaml.YAMLError as e:
+            self.logger.error(f"YAML parsing error in profile file: {e}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Unexpected error loading profile: {e}")
             return None
 
     def validate_profile(self, profile: BackupProfile) -> List[str]:
         """Validate a backup profile and return list of errors."""
+        self.logger.info(f"Validating profile: {profile.name}")
+        
         errors = []
 
         # Basic validation
@@ -164,6 +190,15 @@ class BackupConfigManager:
         # Validate sources and destinations
         errors.extend(self._validate_sources(profile.sources))
         errors.extend(self._validate_destinations(profile.destinations))
+        
+        if errors:
+            self.logger.warning(f"Profile validation found {len(errors)} errors")
+            for error in errors:
+                self.logger.warning(f"  - {error}")
+        else:
+            self.logger.info("Profile validation passed")
+        
+        return errors
 
         # Validate schedule
         errors.extend(self._validate_schedule(profile.schedule))
