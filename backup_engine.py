@@ -132,12 +132,12 @@ class BackupEngine:
         """Sync a source directory to destination using rsync."""
         try:
             source_path = Path(source)
-            dest_path = Path(destination) / source_path.name
+            dest_path = Path(destination)
 
             logger.info(f"Syncing {source} -> {dest_path}")
 
             # Ensure destination directory exists
-            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            dest_path.mkdir(parents=True, exist_ok=True)
 
             # Build and run rsync command
             cmd = self._build_rsync_command(source, dest_path, logger, profile)
@@ -151,12 +151,15 @@ class BackupEngine:
 
     def _build_rsync_command(self, source: str, dest_path: Path, logger: logging.Logger, profile: BackupProfile) -> list:
         """Build rsync command with appropriate options."""
+        # Add trailing slash to source to sync contents, not the directory itself
+        source_with_slash = source.rstrip('/') + '/'
+        
         cmd = [
             'rsync',
             '-av',
             '--progress',
             '--delete',
-            str(source),
+            source_with_slash,
             str(dest_path)
         ]
 

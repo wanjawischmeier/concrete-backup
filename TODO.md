@@ -25,10 +25,10 @@
 - [ ] Fix changes only being applied when toggling scheduling
 - [x] Fix bash script execution
 - [ ] `managers.drive_manager - INFO - Refreshing drive list` gets called twice on startup
-- [ ] Auto mount toggle doesnt mark file as dirty
-- [ ] Trifold folder nesting
+- [x] Trifold folder nesting
 - [x] Unmount before post-backup commands
 - [x] Logs split into 2 files, last part missing?
+- [ ] Rsync logs not showing in ui
 
 ## Features
 - [x] Improved bottom section layout
