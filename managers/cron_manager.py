@@ -11,6 +11,7 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 
 from backup_config import BackupProfile, ScheduleConfig
+from utils.logging_helper import get_backend_logger
 
 
 class CronManager:
@@ -21,6 +22,7 @@ class CronManager:
         self.backup_script_path = Path(__file__).parent / "backup_engine.py"
         self.job_comment = "# Concrete Backup Job"
         self.parent_widget = parent_widget
+        self.logger = get_backend_logger(__name__)
 
     def generate_cron_expression(self, schedule: ScheduleConfig) -> str:
         """Generate a cron expression from schedule config."""
@@ -47,19 +49,21 @@ class CronManager:
 
     def create_backup_script(self, profile_name: str, profile_file_path: str) -> str:
         """Create a shell script that runs the backup with proper environment."""
+        self.logger.info(f"Creating backup script for profile '{profile_name}'")
+        
         script_dir = Path.home() / ".config" / "concrete-backup" / "scripts"
         script_dir.mkdir(parents=True, exist_ok=True)
 
         script_path = script_dir / f"backup_{profile_name}.sh"
+        self.logger.info(f"Script will be saved to: {script_path}")
 
         # Get the path to the project root directory (parent of managers/)
         project_root = Path(__file__).parent.parent.absolute()
         
-                # Get the current Python executable path (we're already running in Poetry environment)
+        # Get the current Python executable path (we're already running in Poetry environment)
         import sys
         python_executable = sys.executable
-
-        # Create the script content
+        self.logger.info(f"Using Python executable: {python_executable}")        # Create the script content
         script_content = f"""#!/bin/bash
 # Concrete Backup Script for profile: {profile_name}
 # Generated automatically - do not edit manually
@@ -95,7 +99,8 @@ fi
 
         # Make it executable
         os.chmod(script_path, 0o755)
-
+        
+        self.logger.info(f"Successfully created backup script: {script_path}")
         return str(script_path)
 
     def get_current_crontab(self) -> str:
@@ -123,7 +128,7 @@ fi
             return result.returncode == 0
 
         except (OSError, subprocess.SubprocessError, PermissionError) as e:
-            print(f"Error setting crontab: {e}")
+            self.logger.error(f"Error setting crontab: {e}")
             if 'temp_file' in locals():
                 try:
                     os.unlink(temp_file)
@@ -133,6 +138,8 @@ fi
 
     def remove_backup_jobs(self) -> bool:
         """Remove all concrete backup jobs from root crontab."""
+        self.logger.info("Removing all backup jobs from crontab")
+        
         current_crontab = self.get_current_crontab()
 
         # Split into lines
@@ -159,14 +166,23 @@ fi
         if new_content and not new_content.endswith('\n'):
             new_content += '\n'
 
-        return self.set_crontab(new_content)
+        success = self.set_crontab(new_content)
+        if success:
+            self.logger.info("Successfully removed backup jobs from crontab")
+        else:
+            self.logger.error("Failed to remove backup jobs from crontab")
+        return success
 
     def add_backup_job(self, profile: BackupProfile, profile_file_path: str) -> Tuple[bool, str]:
         """Add a backup job to root crontab."""
+        self.logger.info(f"Adding backup job for profile '{profile.name}' to crontab")
+        
         if not profile.schedule.enabled:
+            self.logger.warning("Cannot add job: schedule is not enabled")
             return False, "Schedule is not enabled"
         
         if not profile_file_path:
+            self.logger.error("Cannot add job: profile must be saved to a file first")
             return False, "Profile must be saved to a file before scheduling"
 
         try:
@@ -178,6 +194,7 @@ fi
 
             # Generate cron expression
             cron_expr = self.generate_cron_expression(profile.schedule)
+            self.logger.info(f"Generated cron expression: {cron_expr}")
 
             # Get current crontab
             current_crontab = self.get_current_crontab()
@@ -193,11 +210,14 @@ fi
 
             # Set the new crontab
             if self.set_crontab(new_crontab):
+                self.logger.info(f"Successfully added backup job to crontab: {cron_expr}")
                 return True, f"Backup job scheduled in root crontab: {cron_expr}"
             else:
+                self.logger.error("Failed to update crontab")
                 return False, "Failed to update crontab"
 
         except (OSError, subprocess.SubprocessError, PermissionError) as e:
+            self.logger.error(f"Error adding backup job: {str(e)}")
             return False, f"Error adding backup job: {str(e)}"
 
     def get_backup_job_status(self) -> Optional[str]:

@@ -24,6 +24,7 @@
 - [x] Fix cron status not being loaded
 - [ ] Fix changes only being applied when toggling scheduling
 - [x] Fix bash script execution
+- [ ] `managers.drive_manager - INFO - Refreshing drive list` gets called twice on startup
 
 ## Features
 - [x] Improved bottom section layout
@@ -36,4 +37,4 @@
 - [ ] Docker compose setup
 - [x] Add language startup option
 - [ ] Add "Ignore errors" setting
-- [ ] Extensive console logging
+- [x] Extensive console logging

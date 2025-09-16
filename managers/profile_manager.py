@@ -9,6 +9,7 @@ from typing import Optional
 from PyQt5.QtWidgets import QWidget, QMessageBox, QInputDialog, QFileDialog
 
 from backup_config import BackupConfigManager, BackupProfile
+from utils.logging_helper import get_ui_logger
 
 
 class ProfileManager:
@@ -19,6 +20,7 @@ class ProfileManager:
         self.parent_widget = parent_widget
         self.config_manager = BackupConfigManager()
         self.current_profile: Optional[BackupProfile] = None
+        self.logger = get_ui_logger(__name__)
         self.current_profile_path: Optional[str] = None
 
     def create_new_profile(self) -> bool:
@@ -114,24 +116,26 @@ class ProfileManager:
         )
 
         if filename:
+            self.logger.ui(f"User selected profile file: {filename}")
             try:
                 # Use the config manager's new load method
                 profile = self.config_manager.load_profile_from_file(filename)
                 if profile:
                     self.current_profile = profile
                     self.current_profile_path = filename
+                    self.logger.ui(f"Successfully loaded profile '{profile.name}' from {filename}")
                     return True
                 else:
+                    self.logger.ui(f"Failed to load profile from {filename}")
                     QMessageBox.critical(self.parent_widget, "Error", "Failed to load profile file")
                     return False
             except Exception as e:
-                QMessageBox.critical(
-                    self.parent_widget,
-                    "Error",
-                    f"Failed to load profile: {str(e)}"
-                )
-
-        return False
+                self.logger.ui(f"Exception while loading profile from {filename}: {str(e)}")
+                QMessageBox.critical(self.parent_widget, "Error", f"Error loading profile: {str(e)}")
+                return False
+        else:
+            self.logger.ui("User cancelled profile file selection")
+            return False
 
     def is_profile_saved(self) -> bool:
         """Check if the current profile has been saved."""
