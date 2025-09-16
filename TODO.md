@@ -38,3 +38,4 @@
 - [x] Add language startup option
 - [ ] Add "Ignore errors" setting
 - [x] Extensive console logging
+- [ ] Refresh option next to drive list
