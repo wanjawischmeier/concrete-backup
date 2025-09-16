@@ -52,8 +52,12 @@ class CronManager:
 
         script_path = script_dir / f"backup_{profile_name}.sh"
 
-        # Get the path to the backup engine
-        engine_path = Path(__file__).parent.absolute() / "backup_engine.py"
+        # Get the path to the project root directory (parent of managers/)
+        project_root = Path(__file__).parent.parent.absolute()
+        
+                # Get the current Python executable path (we're already running in Poetry environment)
+        import sys
+        python_executable = sys.executable
 
         # Create the script content
         script_content = f"""#!/bin/bash
@@ -71,11 +75,11 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # Log start time
 echo "$(date): Starting backup for profile '{profile_name}'" >> "$LOG_FILE"
 
-# Change to backup directory
-cd "{Path(__file__).parent.absolute()}"
+# Change to project root directory
+cd "{project_root}"
 
-# Activate poetry environment and run backup
-if poetry run python "{engine_path}" "{profile_file_path}"; then
+# Run backup using the Poetry environment Python (hardcoded at script generation time)
+if "{python_executable}" backup_engine.py "{profile_file_path}"; then
     echo "$(date): Backup for '{profile_name}' completed successfully" >> "$LOG_FILE"
     exit 0
 else

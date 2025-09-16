@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concrete-backup"
-version = "0.3.0"
+version = "0.3.1"
 description = ""
 authors = ["Wanja Wischmeier <wanja.wischmeier@gmail.com>"]
 readme = "README.md"
