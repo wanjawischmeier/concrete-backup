@@ -39,3 +39,4 @@
 - [ ] Add "Ignore errors" setting
 - [x] Extensive console logging
 - [ ] Refresh option next to drive list
+- [ ] Change command list order
