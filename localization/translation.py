@@ -7,6 +7,7 @@ import os
 import sys
 from PyQt5.QtCore import QTranslator, QLocale, QCoreApplication
 from PyQt5.QtWidgets import QApplication
+from utils.logging_helper import get_ui_logger
 
 
 class QtTranslationManager:
@@ -16,6 +17,7 @@ class QtTranslationManager:
         self.current_language = "en"
         self.translator = None
         self.translations_dir = os.path.join(os.path.dirname(__file__), "translations")
+        self.logger = get_ui_logger(__name__)
         
         # Ensure translations directory exists
         os.makedirs(self.translations_dir, exist_ok=True)
@@ -24,7 +26,7 @@ class QtTranslationManager:
         """Set the current language and load appropriate translation."""
         app = QApplication.instance()
         if not app:
-            print("No QApplication instance found")
+            self.logger.error("No QApplication instance found")
             return False
         
         # If no language specified, use system locale
@@ -34,17 +36,17 @@ class QtTranslationManager:
             # Extract just the language part (e.g., 'en' from 'en_US')
             if '_' in language_code:
                 language_code = language_code.split('_')[0]
-            print(f"Using system language: {language_code}")
+            self.logger.debug(f"Using system language: {language_code}")
         
         # Remove existing translator
         if self.translator:
             app.removeTranslator(self.translator)
             self.translator = None
         
-        # For English, no translation file needed
+                # For English, no translation file needed
         if language_code == "en":
             self.current_language = "en"
-            print("Set language to: en (default)")
+            self.logger.debug("Set language to: en (default)")
             return True
         
         # Load translation file
@@ -55,10 +57,10 @@ class QtTranslationManager:
         if self.translator.load(translation_path):
             app.installTranslator(self.translator)
             self.current_language = language_code
-            print(f"Loaded translation: {language_code}")
+            self.logger.info(f"Loaded translation: {language_code}")
             return True
         else:
-            print(f"Translation file not found for {language_code}, using English")
+            self.logger.warning(f"Translation file not found for {language_code}, using English")
             self.current_language = "en"
             return False
     

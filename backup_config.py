@@ -322,13 +322,13 @@ class BackupConfigManager:
                 "modified_at": profile.modified_at
             }
         except Exception as e:
-            print(f"Error in _profile_to_dict: {e}")
-            print(f"Profile name: {profile.name}")
-            print(f"Sources: {profile.sources}")
-            print(f"Destinations: {profile.destinations}")
-            print(f"Pre-commands: {profile.pre_commands}")
-            print(f"Post-commands: {profile.post_commands}")
-            print(f"Schedule: {profile.schedule}")
+            self.logger.error(f"Error in _profile_to_dict: {e}")
+            self.logger.error(f"Profile name: {profile.name}")
+            self.logger.error(f"Sources: {profile.sources}")
+            self.logger.error(f"Destinations: {profile.destinations}")
+            self.logger.error(f"Pre-commands: {profile.pre_commands}")
+            self.logger.error(f"Post-commands: {profile.post_commands}")
+            self.logger.error(f"Schedule: {profile.schedule}")
             raise
 
     def _dict_to_profile(self, data: Dict[str, Any]) -> BackupProfile:

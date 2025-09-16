@@ -44,4 +44,6 @@ def get_version_info():
 
 
 if __name__ == "__main__":
-    print(get_version())
+    # When run as a script, output version to stdout
+    import sys
+    print(get_version(), file=sys.stdout)

@@ -128,7 +128,7 @@ fi
             return result.returncode == 0
 
         except (OSError, subprocess.SubprocessError, PermissionError) as e:
-            print(f"Error setting crontab: {e}")
+            self.logger.error(f"Error setting crontab: {e}")
             if 'temp_file' in locals():
                 try:
                     os.unlink(temp_file)
