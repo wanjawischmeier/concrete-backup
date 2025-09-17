@@ -29,8 +29,12 @@
 - [x] Unmount before post-backup commands
 - [x] Logs split into 2 files, last part missing?
 - [ ] Rsync logs not showing in ui
-- [ ] File logs not saved anymore
+- [ ] Refresh drive list not applying in both tabs (are they not using the same data?)
+- [ ] Why do commands have a description field? Propably remove that
+- [x] File logs not saved anymore
 - [x] Mounting issues with udiskctl
+- [x] Multiple destinations not working
+- [ ] Rsync output trunicated in log files
 
 ## Features
 - [x] Improved bottom section layout
@@ -49,3 +53,4 @@
 - [ ] Write current step on ui progress bar
 - [ ] Iron out some ntfs-specific rsync issues
 - [ ] Recently opened entry in file menu
+- [ ] Include all logs in log files

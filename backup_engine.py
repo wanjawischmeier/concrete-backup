@@ -51,7 +51,18 @@ class BackupEngine:
     def setup_logging(self, destination_path: str) -> logging.Logger:
         """Setup destination-specific logging (in addition to console logging)."""
         log_dir = Path(destination_path) / "backup_logs"
-        log_dir.mkdir(exist_ok=True)
+        
+        # Use sudo to create log directory if needed
+        try:
+            log_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            # Try with sudo if permission denied
+            subprocess.run(['sudo', 'mkdir', '-p', str(log_dir)], check=True)
+            # Fix ownership back to current user
+            import os
+            current_user = os.getenv('USER')
+            if current_user:
+                subprocess.run(['sudo', 'chown', '-R', f'{current_user}:{current_user}', str(log_dir)], check=False)
 
         log_file = log_dir / f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
@@ -132,20 +143,30 @@ class BackupEngine:
         """Sync a source directory to destination using rsync."""
         try:
             source_path = Path(source)
-            dest_path = Path(destination)
+            # Create subdirectory in destination with source name
+            dest_path = Path(destination) / source_path.name
 
+            self._log_info(f"Syncing {source} -> {dest_path}")
             logger.info(f"Syncing {source} -> {dest_path}")
 
-            # Ensure destination directory exists
-            dest_path.mkdir(parents=True, exist_ok=True)
+            # Ensure destination directory exists, use sudo if needed
+            try:
+                dest_path.mkdir(parents=True, exist_ok=True)
+            except PermissionError:
+                # Try with sudo if permission denied
+                subprocess.run(['sudo', 'mkdir', '-p', str(dest_path)], check=True)
 
             # Build and run rsync command
             cmd = self._build_rsync_command(source, dest_path, logger, profile)
+            self._log_info(f"Running rsync command: {' '.join(cmd)}")
+            logger.info(f"Running rsync command: {' '.join(cmd)}")
+            
             result = subprocess.run(cmd, capture_output=True, text=True)
 
             return self._process_rsync_result(result, source, logger)
 
         except (OSError, subprocess.SubprocessError, PermissionError, FileNotFoundError) as e:
+            self._log_error(f"Error syncing {source}: {str(e)}")
             logger.error(f"Error syncing {source}: {str(e)}")
             return False
 
@@ -155,6 +176,7 @@ class BackupEngine:
         source_with_slash = source.rstrip('/') + '/'
         
         cmd = [
+            'sudo',  # Use sudo for rsync to handle permission issues
             'rsync',
             '-av',
             '--progress',
@@ -171,14 +193,25 @@ class BackupEngine:
 
     def _process_rsync_result(self, result: subprocess.CompletedProcess, source: str, logger: logging.Logger) -> bool:
         """Process the result of rsync command."""
+        self._log_info(f"Rsync exit code: {result.returncode}")
+        logger.info(f"Rsync exit code: {result.returncode}")
+        
         if result.returncode == 0:
+            self._log_info(f"Successfully synced {source}")
             logger.info(f"Successfully synced {source}")
             if result.stdout:
                 self._log_rsync_output(result.stdout, logger)
             return True
         else:
+            self._log_error(f"Rsync failed for {source}")
+            self._log_error(f"Exit code: {result.returncode}")
+            self._log_error(f"Error: {result.stderr}")
             logger.error(f"Rsync failed for {source}")
+            logger.error(f"Exit code: {result.returncode}")
             logger.error(f"Error: {result.stderr}")
+            if result.stdout:
+                self._log_info(f"Stdout: {result.stdout}")
+                logger.info(f"Stdout: {result.stdout}")
             return False
 
     def _log_rsync_output(self, stdout: str, logger: logging.Logger) -> None:
@@ -219,15 +252,6 @@ class BackupEngine:
 
         self._log_info(f"Starting backup for profile: {profile.name}")
 
-        # Setup destination-specific logging (use first enabled destination or temp directory)
-        log_dir = self._get_log_directory(profile)
-        try:
-            self.destination_logger = self.setup_logging(log_dir)
-        except Exception as e:
-            # If we can't set up destination logging, continue with UI-only logging
-            self._log_error(f"Failed to setup destination logging: {e}")
-            self.destination_logger = None
-        
         try:
             # 1. Run pre-backup commands
             if not self.run_custom_commands(profile.pre_commands, "pre-backup", self.ui_logger):
@@ -250,9 +274,6 @@ class BackupEngine:
         except Exception as e:
             self._log_error(f"Backup process failed: {e}")
             return False
-        finally:
-            # 5. Always flush and close destination logger to ensure all logs are written
-            self._flush_and_close_destination_logger()
 
     def run_backup_to_destination(self, destination: BackupDestination, profile: BackupProfile = None) -> Tuple[bool, str]:
         """Run backup to a specific destination (files only, no custom commands)."""
@@ -271,8 +292,14 @@ class BackupEngine:
             if not setup_success:
                 return False, setup_msg
 
-            # Use existing destination logger or fallback to UI logger
-            logger = self.destination_logger if self.destination_logger else self.ui_logger
+            # Setup destination-specific logging
+            logger = None
+            try:
+                logger = self.setup_logging(destination.target_path)
+                self._log_info(f"Created log file for destination: {destination.target_path}")
+            except Exception as e:
+                self._log_error(f"Failed to setup destination logging: {e}")
+                logger = self.ui_logger  # Fallback to UI logger
                 
             # Log destination-specific messages
             self._log_info(f"Starting backup to {destination.target_path}")
@@ -281,6 +308,13 @@ class BackupEngine:
 
             # Backup all sources to this destination
             success, failed_sources = self._backup_all_sources(destination, logger, profile)
+
+            # Flush and close destination-specific logger
+            if logger and logger != self.ui_logger:
+                for handler in logger.handlers:
+                    handler.flush()
+                    handler.close()
+                logger.handlers.clear()
 
             if success:
                 self._log_info("Backup completed successfully for this destination")
@@ -297,16 +331,6 @@ class BackupEngine:
             error_msg = f"Unexpected error during backup: {str(e)}"
             self._log_error(error_msg)
             return False, error_msg
-
-    def _get_log_directory(self, profile: BackupProfile) -> str:
-        """Get directory for profile-level logging."""
-        # Use first enabled destination for logging, otherwise temp directory
-        for dest in profile.destinations:
-            if dest.enabled:
-                return dest.target_path
-        
-        import tempfile
-        return tempfile.gettempdir()
 
     def _process_all_destinations(self, profile: BackupProfile) -> bool:
         """Process all enabled destinations."""
