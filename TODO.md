@@ -25,6 +25,16 @@
 - [ ] Fix changes only being applied when toggling scheduling
 - [x] Fix bash script execution
 - [ ] `managers.drive_manager - INFO - Refreshing drive list` gets called twice on startup
+- [x] Trifold folder nesting
+- [x] Unmount before post-backup commands
+- [x] Logs split into 2 files, last part missing?
+- [ ] Rsync logs not showing in ui
+- [ ] Refresh drive list not applying in both tabs (are they not using the same data?)
+- [ ] Why do commands have a description field? Propably remove that
+- [x] File logs not saved anymore
+- [x] Mounting issues with udiskctl
+- [x] Multiple destinations not working
+- [ ] Rsync output trunicated in log files
 
 ## Features
 - [x] Improved bottom section layout
@@ -40,3 +50,7 @@
 - [x] Extensive console logging
 - [ ] Refresh option next to drive list
 - [ ] Change command list order
+- [ ] Write current step on ui progress bar
+- [ ] Iron out some ntfs-specific rsync issues
+- [ ] Recently opened entry in file menu
+- [ ] Include all logs in log files
